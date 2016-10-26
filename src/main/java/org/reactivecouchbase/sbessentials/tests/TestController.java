@@ -2,6 +2,7 @@ package org.reactivecouchbase.sbessentials.tests;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.javadsl.Source;
+import akka.util.ByteString;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
@@ -103,6 +104,16 @@ public class TestController {
     public Future<Result> testHtml() {
         return LogAction.sync(ctx ->
             Ok.html("<h1>Hello World!</h1>")
+        );
+    }
+
+    @RequestMapping(
+            method = RequestMethod.POST,
+            path = "/post"
+    )
+    public Future<Result> testPost() {
+        return LogAction.sync(ctx ->
+            Ok.chunked(ctx.bodyAsStream()).as("application/json")
         );
     }
 

@@ -1,7 +1,15 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.StreamConverters;
+import akka.util.ByteString;
 import javaslang.collection.HashMap;
+import javaslang.collection.List;
+import javaslang.collection.Map;
+import org.reactivecouchbase.functional.Option;
+import org.reactivecouchbase.json.JsValue;
 import org.springframework.web.context.WebApplicationContext;
+import org.w3c.dom.Node;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,5 +61,29 @@ public class RequestContext {
 
     public HttpServletResponse getResponse() {
         return response;
+    }
+
+    public Source<ByteString, ?> bodyAsStream() {
+        return StreamConverters.fromInputStream(() -> getRequest().getInputStream());
+    }
+
+    public Option<String> header() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    public ByteString bodyAsBytes() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    public JsValue bodyAsJson() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    public Node bodyAsXml() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    public Map<String, List<String>> bodyAsURLForm() {
+        throw new RuntimeException("Not implemented yet");
     }
 }
