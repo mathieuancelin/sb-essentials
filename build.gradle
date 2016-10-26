@@ -1,0 +1,54 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.4.1.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+
+jar {
+    baseName = 'es-essentials'
+    version =  '1.0.0-SNAPSHOT'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://raw.github.com/ReactiveCouchbase/repository/master/snapshots/'
+    }
+}
+
+mainClassName = 'org.reactivecouchbase.sbessentials.App'
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web:1.4.1.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-actuator:1.4.1.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-thymeleaf:1.4.1.RELEASE")
+    compile("org.reactivecouchbase:common-lib:1.0-SNAPSHOT")
+    compile("org.reactivecouchbase:client-lib:1.0-SNAPSHOT")
+    compile("org.reactivecouchbase:json-lib:1.0-SNAPSHOT")
+    compile("org.reactivecouchbase:validation-lib:1.0-SNAPSHOT")
+    compile("org.reactivecouchbase:concurrent-lib:1.0-SNAPSHOT")
+    compile("org.reactivecouchbase:sql-lib:1.0-SNAPSHOT")
+    compile("com.typesafe.akka:akka-actor_2.11:2.4.11")
+    compile("com.typesafe.akka:akka-stream_2.11:2.4.11")
+    compile("com.typesafe.akka:akka-http-core_2.11:2.4.11")
+    compile("io.javaslang:javaslang:2.0.4")
+
+    compile("org.pcollections:pcollections:2.1.2")
+    compile("com.squareup.okhttp3:okhttp:3.4.1")
+    compile("io.reactivex:rxjava:1.2.0")
+
+    testCompile("org.springframework.boot:spring-boot-starter-test:1.4.1.RELEASE")
+    testCompile("junit:junit:4.12")
+    testCompile("org.assertj:assertj-core:3.5.2")
+}
