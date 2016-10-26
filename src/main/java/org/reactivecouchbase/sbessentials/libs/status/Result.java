@@ -10,6 +10,8 @@ import javaslang.collection.HashSet;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import org.reactivecouchbase.common.Throwables;
+import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.concurrent.Promise;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ public class Result {
     public final HashMap<String, List<String>> headers;
     public final HashSet<Cookie> cookies;
     public final String contentType;
+    public final Promise<Object> materializedValue = Promise.create();
 
     public Result(int status, Source<ByteString, ?> source, String contentType, HashMap<String, List<String>> headers, HashSet<Cookie> cookies) {
         this.status = status;
@@ -220,6 +223,14 @@ public class Result {
 
     public Result stream(Source<String, ?> stream) {
         return Result.copy(this).withSource(stream.map(ByteString::fromString)).build();
+    }
+
+    public Future<Object> materializedValue() {
+        return materializedValue.future();
+    }
+
+    public <T> Future<T> materializedValue(Class<T> as) {
+        return materializedValue.future().mapTo(as);
     }
 
     public String toString() {

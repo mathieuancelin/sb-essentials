@@ -1,7 +1,13 @@
 package org.reactivecouchbase.sbessentials.libs.future;
 
+import akka.Done;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.Sink;
+import akka.util.ByteString;
 import javaslang.collection.List;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.status.Result;
@@ -17,6 +23,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class FutureSupport {
 
@@ -70,9 +78,15 @@ public class FutureSupport {
                     response.setContentType(result.contentType);
                     ResponseBodyEmitter rbe = new ResponseBodyEmitter();
                     this.setResult(rbe);
-                    result.source.runForeach(byteString -> {
+
+                    Source<ByteString, ?> source = result.source;
+                    Pair<?, CompletionStage<Done>> run = source.toMat(Sink.foreach(byteString -> {
                         rbe.send(byteString.toArray(), MediaType.parseMediaType(result.contentType));
-                    }, materializer).whenComplete((success, error) -> {
+                    }), Keep.both()).run(materializer);
+
+                    result.materializedValue.success(run.first());
+
+                    run.second().whenComplete((success, error) -> {
                         if (success != null) {
                             rbe.complete();
                         } else {
@@ -86,4 +100,5 @@ public class FutureSupport {
             });
         }
     }
+
 }
