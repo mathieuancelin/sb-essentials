@@ -5,14 +5,12 @@ import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import org.reactivecouchbase.common.Duration;
-import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.Actions;
-import org.reactivecouchbase.sbessentials.libs.status.Result;
+import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import rx.Observable;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static akka.pattern.PatternsCS.after;
-import static org.reactivecouchbase.sbessentials.libs.status.Results.Ok;
+import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 
 @RestController
 @RequestMapping("/tests")

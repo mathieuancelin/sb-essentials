@@ -2,7 +2,7 @@ package org.reactivecouchbase.sbessentials.libs.actions;
 
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.concurrent.NamedExecutors;
-import org.reactivecouchbase.sbessentials.libs.status.Result;
+import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;

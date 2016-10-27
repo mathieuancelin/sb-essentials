@@ -1,4 +1,4 @@
-package org.reactivecouchbase.sbessentials.libs.status;
+package org.reactivecouchbase.sbessentials.libs.result;
 
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;

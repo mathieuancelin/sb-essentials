@@ -10,7 +10,7 @@ import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import javaslang.collection.List;
 import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.sbessentials.libs.status.Result;
+import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;

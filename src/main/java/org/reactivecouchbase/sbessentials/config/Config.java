@@ -2,9 +2,10 @@ package org.reactivecouchbase.sbessentials.config;
 
 import akka.actor.ActorSystem;
 import org.reactivecouchbase.common.Duration;
-import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
-import org.reactivecouchbase.sbessentials.libs.streams.SourceMessageConverter;
+import org.reactivecouchbase.concurrent.NamedExecutors;
 import org.reactivecouchbase.sbessentials.libs.future.FutureSupport;
+import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -16,16 +17,25 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 @Configuration
 public class Config {
 
     private final ActorSystem system = ActorSystem.create("SpringBootAppSystem");
+    private final ExecutorService globalExecutor = NamedExecutors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, "GlobalExecutor");
+
+    @Value("${app.config.async.timeout}")
+    public String timeoutDuration;
 
     @Bean
     public ActorSystem actorSystem() {
         return system;
+    }
+
+    @Bean
+    public ExecutorService globalExecutor() {
+        return globalExecutor;
     }
 
 
@@ -36,13 +46,12 @@ public class Config {
             @Override
             public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
                 converters.add(new JsonMessageConverter());
-                converters.add(new SourceMessageConverter());
             }
 
             @Override
             public void configureAsyncSupport(final AsyncSupportConfigurer configurer) {
-                configurer.setDefaultTimeout(Duration.parse("10min").toMillis());
-                configurer.setTaskExecutor(new ConcurrentTaskExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)));
+                configurer.setDefaultTimeout(Duration.parse(timeoutDuration.trim().toLowerCase()).toMillis());
+                configurer.setTaskExecutor(new ConcurrentTaskExecutor(globalExecutor));
                 configurer.registerCallableInterceptors(timeoutInterceptor());
             }
 

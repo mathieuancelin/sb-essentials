@@ -44,10 +44,6 @@ dependencies {
     compile("com.typesafe.akka:akka-http-core_2.11:2.4.11")
     compile("io.javaslang:javaslang:2.0.4")
 
-    compile("org.pcollections:pcollections:2.1.2")
-    compile("com.squareup.okhttp3:okhttp:3.4.1")
-    compile("io.reactivex:rxjava:1.2.0")
-
     testCompile("org.springframework.boot:spring-boot-starter-test:1.4.1.RELEASE")
     testCompile("junit:junit:4.12")
     testCompile("org.assertj:assertj-core:3.5.2")
