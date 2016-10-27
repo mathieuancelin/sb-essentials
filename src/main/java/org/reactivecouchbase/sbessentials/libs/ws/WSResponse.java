@@ -9,17 +9,9 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.common.Throwables;
 import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
-import org.reactivecouchbase.json.JsValue;
-import org.reactivecouchbase.json.Json;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class WSResponse {
@@ -65,34 +57,12 @@ public class WSResponse {
         throw new RuntimeException("Not implemented yet");
     }
 
-    public String body() {
-        return bodyAsBytes().utf8String();
-    }
-
-    public JsValue json() {
-        return Json.parse(body());
-    }
-
-    public Node xml() {
-        try {
-            return DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                    .parse(new InputSource(new StringReader(body())));
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
-    public ByteString bodyAsBytes() {
-        if (_bodyAsBytes.get() == null) {
-            ActorMaterializer materializer = ActorMaterializer.create(WS.webApplicationContext.getBean(ActorSystem.class));
-            Source<ByteString, ?> source = underlying.entity().getDataBytes();
-            Future<ByteString> fource = Future.fromJdkCompletableFuture(
-                    source.runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
-            );
-            ByteString bodyAsString = Await.resultForever(fource);
-            _bodyAsBytes.compareAndSet(null, bodyAsString);
-        }
-        return _bodyAsBytes.get();
+    public Future<WSBody> body() {
+        ActorMaterializer materializer = ActorMaterializer.create(WS.webApplicationContext.getBean(ActorSystem.class));
+        Source<ByteString, ?> source = underlying.entity().getDataBytes();
+        return Future.fromJdkCompletableFuture(
+                source.runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
+        ).map(WSBody::new);
     }
 
     public Source<ByteString, ?> bodyAsStream() {

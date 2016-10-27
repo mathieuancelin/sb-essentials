@@ -12,6 +12,7 @@ import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.Actions;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
+import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,6 +146,7 @@ public class TestController {
     public Future<Result> testWS() {
         return LogAction.async(ctx ->
             WS.call("http://freegeoip.net", HttpRequest.create("/json/"))
+                .flatMap(WSResponse::body)
                 .map(r -> r.json().pretty())
                 .map(p -> Ok.json(p))
         );
