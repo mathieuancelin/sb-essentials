@@ -9,9 +9,9 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 public class WSResponse {
@@ -23,14 +23,14 @@ public class WSResponse {
 
     public WSResponse(HttpResponse underlying) {
         this.underlying = underlying;
-        Map<String, List<String>> headers = HashMap.empty();
+        Map<String, List<String>> _headers = HashMap.empty();
         for (HttpHeader header : underlying.getHeaders()) {
-            if (headers.containsKey(header.lowercaseName())) {
-                headers = headers.put(header.lowercaseName(), List.empty());
+            if (!_headers.containsKey(header.name())) {
+                _headers = _headers.put(header.name(), List.empty());
             }
-            headers = headers.put(header.lowercaseName(), headers.get(header.lowercaseName()).get().append(header.value()));
+            _headers = _headers.put(header.name(), _headers.get(header.name()).get().append(header.value()));
         }
-        this.headers = headers;
+        this.headers = _headers;
     }
 
     public Map<String, List<String>> headers() {

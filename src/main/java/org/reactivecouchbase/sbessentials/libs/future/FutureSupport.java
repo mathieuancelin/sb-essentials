@@ -10,7 +10,10 @@ import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import javaslang.collection.List;
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.sbessentials.libs.actions.Actions;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -63,6 +66,9 @@ public class FutureSupport {
     }
 
     public static class FutureDeferredResult extends DeferredResult<ResponseBodyEmitter> {
+
+        private static final Logger logger = LoggerFactory.getLogger(FutureDeferredResult.class);
+
         public FutureDeferredResult(Future<Result> future, HttpServletResponse response, ActorMaterializer materializer) {
             super(null, new Object());
             Assert.notNull(future, "Future cannot be null");

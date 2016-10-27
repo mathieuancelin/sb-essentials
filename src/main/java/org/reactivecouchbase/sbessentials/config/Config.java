@@ -18,15 +18,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
 public class Config {
 
     private final ActorSystem system = ActorSystem.create("SpringBootAppSystem");
-    private final ExecutorService globalExecutor = NamedExecutors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, "GlobalExecutor");
+    private final AtomicReference<ExecutorService> globalExecutorRef = new AtomicReference<>(null);
 
     @Value("${app.config.async.timeout}")
     public String timeoutDuration;
+
+    @Value("${app.config.async.globalec.threadcount}")
+    public String threadCount;
 
     @Bean
     public ActorSystem actorSystem() {
@@ -35,7 +39,11 @@ public class Config {
 
     @Bean
     public ExecutorService globalExecutor() {
-        return globalExecutor;
+        if (globalExecutorRef.get() == null) {
+            ExecutorService executorService = NamedExecutors.newFixedThreadPool(Integer.valueOf(threadCount), "GlobalExecutor");
+            globalExecutorRef.compareAndSet(null, executorService);
+        }
+        return globalExecutorRef.get();
     }
 
 
@@ -51,7 +59,7 @@ public class Config {
             @Override
             public void configureAsyncSupport(final AsyncSupportConfigurer configurer) {
                 configurer.setDefaultTimeout(Duration.parse(timeoutDuration.trim().toLowerCase()).toMillis());
-                configurer.setTaskExecutor(new ConcurrentTaskExecutor(globalExecutor));
+                configurer.setTaskExecutor(new ConcurrentTaskExecutor(globalExecutor()));
                 configurer.registerCallableInterceptors(timeoutInterceptor());
             }
 

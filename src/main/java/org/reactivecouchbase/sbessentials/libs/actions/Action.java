@@ -2,7 +2,10 @@ package org.reactivecouchbase.sbessentials.libs.actions;
 
 import javaslang.collection.HashMap;
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.json.Json;
+import org.reactivecouchbase.json.mapping.ThrowableWriter;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
+import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -16,12 +19,28 @@ public interface Action {
 
     Future<Result> invoke(RequestContext request, Function<RequestContext, Future<Result>> block);
 
+    default Future<Result> innerInvoke(RequestContext request, Function<RequestContext, Future<Result>> block) {
+        try {
+            return this.invoke(request, block);
+        } catch (Exception e) {
+            Actions.logger.error("innerInvoke action error", e);
+            return Future.successful(Actions.transformError(e, request));
+        }
+    }
+
     default Future<Result> sync(Function<RequestContext, Result> block) {
         return sync(Actions.EXECUTOR_SERVICE, block);
     }
 
     default Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
-        return async(ec, req -> Future.async(() -> block.apply(req), ec));
+        return async(ec, req -> Future.async(() -> {
+            try {
+                return block.apply(req);
+            } catch (Exception e) {
+                Actions.logger.error("Sync action error", e);
+                return Actions.transformError(e, req);
+            }
+        }, ec));
     }
 
     default Future<Result> async(Function<RequestContext, Future<Result>> block) {
@@ -35,15 +54,17 @@ public interface Action {
             HttpServletRequest request = servletRequestAttributes.getRequest();
             HttpServletResponse response = servletRequestAttributes.getResponse();
             RequestContext rc = new RequestContext(HashMap.empty(), Actions.webApplicationContext, request, response);
-            return Future.async(() -> invoke(rc, block), ec).flatMap(e -> e, ec);
+            return Future.async(() -> innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
+                Future.successful(Actions.transformError(t, rc))
+            , Actions.EXECUTOR_SERVICE);
         } else {
-            return Future.failed(new RuntimeException("RequestAttributes is not an instance of "));
+            return Future.successful(Actions.transformError(new RuntimeException("RequestAttributes is not an instance of "), null));
         }
     }
 
     default Action combine(Action other) {
         Action that = this;
-        return (request, block) -> that.invoke(request, r1 -> other.invoke(r1, block));
+        return (request, block) -> that.innerInvoke(request, r1 -> other.innerInvoke(r1, block));
     }
 
     default Action andThen(Action other) {
