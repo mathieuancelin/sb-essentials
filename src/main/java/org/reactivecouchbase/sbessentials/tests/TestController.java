@@ -72,22 +72,19 @@ public class TestController {
     });
 
     public static Action Throttle(int limit, long perMillis) {
-        return new Action() {
-            private AtomicLong next = new AtomicLong(System.currentTimeMillis());
-            private AtomicLong counter = new AtomicLong(0L);
-            @Override
-            public Future<Result> invoke(RequestContext request, Function<RequestContext, Future<Result>> block) {
-                if (System.currentTimeMillis() > next.get()) {
-                    next.set(System.currentTimeMillis() + perMillis);
-                    counter.set(0);
-                }
-                if (counter.get() == limit) {
-                    logger.info("Too much call for {}", request.getRequest().getRequestURI());
-                    return Future.successful(BadRequest.json(Json.obj().with("error", "too much calls")));
-                }
-                counter.incrementAndGet();
-                return block.apply(request);
+        AtomicLong next = new AtomicLong(System.currentTimeMillis());
+        AtomicLong counter = new AtomicLong(0L);
+        return (request, block) -> {
+            if (System.currentTimeMillis() > next.get()) {
+                next.set(System.currentTimeMillis() + perMillis);
+                counter.set(0L);
             }
+            if (counter.get() == limit) {
+                logger.info("Too much call for {}", request.getRequest().getRequestURI());
+                return Future.successful(BadRequest.json(Json.obj().with("error", "too much calls")));
+            }
+            counter.incrementAndGet();
+            return block.apply(request);
         };
     }
 
