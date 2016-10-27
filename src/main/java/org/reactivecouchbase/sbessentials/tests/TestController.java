@@ -1,5 +1,8 @@
 package org.reactivecouchbase.sbessentials.tests;
 
+import akka.Done;
+import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -13,16 +16,19 @@ import org.reactivecouchbase.sbessentials.libs.status.Result;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import rx.Observable;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static akka.pattern.PatternsCS.after;
 import static org.reactivecouchbase.sbessentials.libs.status.Results.Ok;
 
 @RestController
@@ -30,6 +36,9 @@ import static org.reactivecouchbase.sbessentials.libs.status.Results.Ok;
 public class TestController {
 
     private final static Logger logger = LoggerFactory.getLogger(TestController.class);
+
+    @Autowired
+    ActorSystem actorSystem;
 
     public static Action LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
@@ -52,18 +61,34 @@ public class TestController {
             path = "/sse"
     )
     public Future<Result> testStream() {
-        return Actions.sync(ctx ->
-            Ok.stream(
-                Source.tick(
-                    FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
-                    FiniteDuration.apply(1, TimeUnit.SECONDS),
-                    ""
-                )
-                .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
-                .map(Json::stringify)
-                .map(j -> "data: " + j)
-                .map(j -> j + "\n\n")
-            ).as("text/event-stream")
+        return Actions.sync(ctx -> {
+                    Result result = Ok.stream(
+                            Source.tick(
+                                    FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
+                                    FiniteDuration.apply(1, TimeUnit.SECONDS),
+                                    ""
+                            )
+                                    .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
+                                    .map(Json::stringify)
+                                    .map(j -> "data: " + j)
+                                    .map(j -> j + "\n\n")
+                    ).as("text/event-stream");
+
+                    result
+                            .materializedValue().mapTo(Cancellable.class)
+                            .foreach(c -> {
+                                after(
+                                    FiniteDuration.create(5, TimeUnit.SECONDS),
+                                    actorSystem.scheduler(),
+                                    actorSystem.dispatcher(),
+                                    CompletableFuture.completedFuture(Done.getInstance())
+                                ).thenAccept(d ->
+                                    c.cancel()
+                                );
+                                return Done.getInstance();
+                            });
+                    return result;
+                }
         );
     }
 
