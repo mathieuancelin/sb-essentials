@@ -92,9 +92,9 @@ public class TestController {
     }
 
     public static Action ApiManagedAction = LogBefore
-            .andThen(ApiKeyCheck)
-            .andThen(Throttle(2, 3000))
-            .andThen(LogAfter);
+                                                .andThen(ApiKeyCheck)
+                                                .andThen(Throttle(2, 3000))
+                                                .andThen(LogAfter);
 
     @RequestMapping(
             method = RequestMethod.GET,
