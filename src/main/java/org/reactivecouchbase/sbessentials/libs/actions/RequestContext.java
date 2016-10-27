@@ -80,8 +80,8 @@ public class RequestContext {
         return StreamConverters.fromInputStream(() -> getRequest().getInputStream());
     }
 
-    public Option<String> header() {
-        throw new RuntimeException("Not implemented yet");
+    public Option<String> header(String name) {
+        return Option.apply(request.getHeader(name));
     }
 
     public Map<String, List<String>> headers() {

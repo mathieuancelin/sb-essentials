@@ -10,6 +10,7 @@ import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.RequestContext;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
@@ -23,11 +24,14 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static akka.pattern.PatternsCS.after;
-import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
+import static org.reactivecouchbase.sbessentials.libs.result.Results.BadRequest;
+import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 
 @RestController
 @RequestMapping("/tests")
@@ -37,6 +41,21 @@ public class TestController {
 
     @Autowired
     ActorSystem actorSystem;
+
+    public static Action ApiKeyCheck = (req, block) -> req.header("Api-Key").fold(
+        () -> {
+            logger.info("No API KEY provided");
+            return Future.successful(BadRequest.json(Json.obj().with("error", "No API KEY provided")));
+        },
+        (value) -> {
+            if (value.equalsIgnoreCase("12345")) {
+                return block.apply(req);
+            } else {
+                logger.info("Bad API KEY provided {}", value);
+                return Future.successful(BadRequest.json(Json.obj().with("error", "Bad API KEY")));
+            }
+        }
+    );
 
     public static Action LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
@@ -52,7 +71,30 @@ public class TestController {
         );
     });
 
-    public static Action LogAction = LogBefore.andThen(LogAfter);
+    public static Action Throttle(int limit, long perMillis) {
+        return new Action() {
+            private AtomicLong next = new AtomicLong(System.currentTimeMillis());
+            private AtomicLong counter = new AtomicLong(0L);
+            @Override
+            public Future<Result> invoke(RequestContext request, Function<RequestContext, Future<Result>> block) {
+                if (System.currentTimeMillis() > next.get()) {
+                    next.set(System.currentTimeMillis() + perMillis);
+                    counter.set(0);
+                }
+                if (counter.get() == limit) {
+                    logger.info("Too much call for {}", request.getRequest().getRequestURI());
+                    return Future.successful(BadRequest.json(Json.obj().with("error", "too much calls")));
+                }
+                counter.incrementAndGet();
+                return block.apply(request);
+            }
+        };
+    }
+
+    public static Action ApiManagedAction = LogBefore
+            .andThen(ApiKeyCheck)
+            .andThen(Throttle(2, 3000))
+            .andThen(LogAfter);
 
     @RequestMapping(
             method = RequestMethod.GET,
@@ -103,7 +145,7 @@ public class TestController {
             path = "/huge"
     )
     public Future<Result> testHugeText() {
-        return LogAction.sync(ctx ->
+        return ApiManagedAction.sync(ctx ->
             Ok.text(VERY_HUGE_TEXT + "\n")
         );
     }
@@ -113,7 +155,7 @@ public class TestController {
             path = "/json"
     )
     public Future<Result> testJson() {
-        return LogAction.sync(ctx ->
+        return ApiManagedAction.sync(ctx ->
             Ok.json(Json.obj().with("message", "Hello World!"))
         );
     }
@@ -123,7 +165,7 @@ public class TestController {
             path = "/html"
     )
     public Future<Result> testHtml() {
-        return LogAction.sync(ctx ->
+        return ApiManagedAction.sync(ctx ->
             Ok.html("<h1>Hello World!</h1>")
         );
     }
@@ -133,7 +175,7 @@ public class TestController {
             path = "/post"
     )
     public Future<Result> testPost() {
-        return LogAction.sync(ctx ->
+        return ApiManagedAction.sync(ctx ->
             Ok.chunked(ctx.bodyAsStream()).as("application/json")
         );
     }
@@ -143,7 +185,7 @@ public class TestController {
             path = "/ws"
     )
     public Future<Result> testWS() {
-        return LogAction.async(ctx ->
+        return ApiManagedAction.async(ctx ->
             WS.call("http://freegeoip.net", HttpRequest.create("/json/"))
                 .flatMap(WSResponse::body)
                 .map(r -> r.json().pretty())
