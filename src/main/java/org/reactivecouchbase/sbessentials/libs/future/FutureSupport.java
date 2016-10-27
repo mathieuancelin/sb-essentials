@@ -44,7 +44,7 @@ public class FutureSupport {
         @Override
         public boolean supportsReturnType(MethodParameter returnType) {
             return Future.class.isAssignableFrom(returnType.getParameterType())
-                    && returnType.getGenericParameterType().toString().equalsIgnoreCase("org.reactivecouchbase.concurrent.Future<org.reactivecouchbase.sbessentials.libs.result.Result>");
+                    && returnType.getGenericParameterType().toString().equalsIgnoreCase(Future.class.getName() + "<" + Result.class.getName()+ ">");
         }
 
         @SuppressWarnings("unchecked")
