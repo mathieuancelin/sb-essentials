@@ -84,7 +84,7 @@ public class FutureSupport {
                         rbe.send(byteString.toArray(), MediaType.parseMediaType(result.contentType));
                     }), Keep.both()).run(materializer);
 
-                    result.materializedValue.success(run.first());
+                    result.materializedValue.trySuccess(run.first());
 
                     run.second().whenComplete((success, error) -> {
                         if (success != null) {

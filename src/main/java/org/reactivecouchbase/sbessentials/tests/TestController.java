@@ -60,30 +60,29 @@ public class TestController {
     public Future<Result> testStream() {
         return Actions.sync(ctx -> {
                     Result result = Ok.stream(
-                            Source.tick(
-                                    FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
-                                    FiniteDuration.apply(1, TimeUnit.SECONDS),
-                                    ""
-                            )
-                                    .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
-                                    .map(Json::stringify)
-                                    .map(j -> "data: " + j)
-                                    .map(j -> j + "\n\n")
+                        Source.tick(
+                            FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
+                            FiniteDuration.apply(1, TimeUnit.SECONDS),
+                            ""
+                        )
+                        .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
+                        .map(Json::stringify)
+                        .map(j -> "data: " + j)
+                        .map(j -> j + "\n\n")
                     ).as("text/event-stream");
 
-                    result
-                            .materializedValue().mapTo(Cancellable.class)
-                            .foreach(c -> {
-                                after(
-                                    FiniteDuration.create(5, TimeUnit.SECONDS),
-                                    actorSystem.scheduler(),
-                                    actorSystem.dispatcher(),
-                                    CompletableFuture.completedFuture(Done.getInstance())
-                                ).thenAccept(d ->
-                                    c.cancel()
-                                );
-                                return Done.getInstance();
-                            });
+                    /*result.materializedValue(Cancellable.class).andThen(ttry -> {
+                        for (Cancellable c : ttry.asSuccess()) {
+                            after(
+                                FiniteDuration.create(5, TimeUnit.SECONDS),
+                                actorSystem.scheduler(),
+                                actorSystem.dispatcher(),
+                                CompletableFuture.completedFuture(Done.getInstance())
+                            ).thenAccept(d ->
+                                c.cancel()
+                            );
+                        }
+                    });*/
                     return result;
                 }
         );
