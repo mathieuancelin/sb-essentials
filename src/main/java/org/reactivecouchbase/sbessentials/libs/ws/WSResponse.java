@@ -12,13 +12,10 @@ import javaslang.collection.Map;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public class WSResponse {
 
     public final HttpResponse underlying;
 
-    private final AtomicReference<ByteString> _bodyAsBytes = new AtomicReference<>(null);
     private final Map<String, List<String>> headers;
 
     public WSResponse(HttpResponse underlying) {

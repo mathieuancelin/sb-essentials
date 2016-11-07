@@ -2,10 +2,7 @@ package org.reactivecouchbase.sbessentials.libs.actions;
 
 import javaslang.collection.HashMap;
 import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.json.Json;
-import org.reactivecouchbase.json.mapping.ThrowableWriter;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
-import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;

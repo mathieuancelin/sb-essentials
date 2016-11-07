@@ -2,7 +2,7 @@ package org.reactivecouchbase.sbessentials.libs.actions;
 
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.concurrent.NamedExecutors;
-import org.reactivecouchbase.concurrent.Promise;
+import org.reactivecouchbase.functional.Option;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.json.mapping.ThrowableWriter;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
@@ -59,10 +59,8 @@ public class Actions {
 
     public static Result transformError(Throwable t, RequestContext request) {
         if (request != null) {
-            request.header("Accept").foreach(v -> {
-                logger.info("Accept: " + v);
-                return null;
-            });
+            // TODO : return the right representation
+            Option<String> accept = request.header("Accept");
         }
         return Results.InternalServerError.json(Json.obj().with("error",
                 new ThrowableWriter(true).write(t)));
