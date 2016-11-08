@@ -11,7 +11,7 @@ public Future<Result> text() {
 
 ## Actions
 
-Every Spring action is actually an `Action`. Actions can easily be composed
+Every Spring action is actually an `Action`
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
@@ -34,6 +34,8 @@ public static class MyController {
 }
 ```
 
+Actions can easily be composed
+
 ```java
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
@@ -46,12 +48,14 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 @RequestMapping("/api")
 public static class MyController {
 
+    // Action that logs before request
     private static Action LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
         logger.info("[Log] before action -> {}", req.getRequest().getRequestURI());
         return block.apply(req.setValue("start", start));
     };
 
+    // Action that logs after request
     private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
         logger.info(
             "[Log] after action -> {} : took {}",
@@ -68,6 +72,7 @@ public static class MyController {
 
     @GetMapping("/hello")
     public Future<Result> text() {
+        // Use composed action
         return LoggedAction.sync(ctx ->
             Ok.text("Hello World!\n")
         );
