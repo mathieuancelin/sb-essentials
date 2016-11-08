@@ -11,11 +11,10 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'spring-boot'
+apply plugin: 'maven-publish'
 
-jar {
-    baseName = 'es-essentials'
-    version =  '1.0.0-SNAPSHOT'
-}
+group = 'org.reactivecouchbase'
+version = '1.0.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -27,7 +26,7 @@ repositories {
     }
 }
 
-mainClassName = 'org.reactivecouchbase.sbessentials.App'
+// mainClassName = 'org.reactivecouchbase.sbessentials.App'
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web:1.4.1.RELEASE")
@@ -47,4 +46,20 @@ dependencies {
     testCompile("org.springframework.boot:spring-boot-starter-test:1.4.1.RELEASE")
     testCompile("junit:junit:4.12")
     testCompile("org.assertj:assertj-core:3.5.2")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url version.contains("SNAPSHOT") ? "$buildDir/../repository/snapshots" : "$buildDir/../repository/releases"
+        }
+    }
 }
