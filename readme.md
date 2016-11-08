@@ -54,9 +54,12 @@ public static class MyController {
 
     private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
         logger.info(
-                "[Log] after action -> {} : took {}",
-                req.getRequest().getRequestURI(),
-                Duration.of(System.currentTimeMillis() - req.getValue("start", Long.class), TimeUnit.MILLISECONDS).toHumanReadable()
+            "[Log] after action -> {} : took {}",
+            req.getRequest().getRequestURI(),
+            Duration.of(
+                System.currentTimeMillis() - req.getValue("start", Long.class),
+                TimeUnit.MILLISECONDS
+            ).toHumanReadable()
         );
     });
 
