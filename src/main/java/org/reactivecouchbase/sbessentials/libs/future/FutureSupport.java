@@ -76,12 +76,16 @@ public class FutureSupport {
                 for (Result result : ttry.asSuccess()) {
                     for (Map.Entry<String, List<String>> entry : result.headers.toJavaMap().entrySet()) {
                         for (String value : entry.getValue()) {
+                            // System.out.println("sent header : " + entry.getKey() + " :: " + value);
                             response.setHeader(entry.getKey(), value);
                         }
                     }
                     result.cookies.forEach(response::addCookie);
                     response.setStatus(result.status);
                     response.setContentType(result.contentType);
+                    response.setHeader("Content-Type", result.contentType);
+                    response.setHeader("X-Content-Type", result.contentType);
+                    response.setHeader("Transfer-Encoding", "chunked");
                     ResponseBodyEmitter rbe = new ResponseBodyEmitter();
                     this.setResult(rbe);
 

@@ -22,6 +22,7 @@ public class WSResponse {
         this.underlying = underlying;
         Map<String, List<String>> _headers = HashMap.empty();
         for (HttpHeader header : underlying.getHeaders()) {
+            // System.out.println("received header : " + header.toString());
             if (!_headers.containsKey(header.name())) {
                 _headers = _headers.put(header.name(), List.empty());
             }
