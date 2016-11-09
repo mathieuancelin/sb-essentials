@@ -221,7 +221,6 @@ public class BasicResultsTest {
 
     @Test
     public void testSSEResult() throws Exception {
-        Thread.sleep(120000);
         Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/sse")
             .withHeader("Api-Key", "12345")
