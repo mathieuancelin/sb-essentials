@@ -146,7 +146,6 @@ public class BasicResultsTest {
             ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         JsObject jsonBody = body._1.asObject();
-        System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("latitude"));
         Assert.assertTrue(jsonBody.exists("longitude"));
         Assert.assertTrue(jsonBody.exists("ip"));

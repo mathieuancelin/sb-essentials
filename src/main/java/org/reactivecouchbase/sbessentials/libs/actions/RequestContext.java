@@ -75,7 +75,8 @@ public class RequestContext {
     }
 
     public Future<RequestBody> body() {
-        ActorMaterializer materializer = ActorMaterializer.create(Actions.webApplicationContext.getBean(ActorSystem.class));
+        ActorMaterializer materializer = Actions.materializer();
+        // ActorMaterializer materializer = ActorMaterializer.create(Actions.webApplicationContext.getBean(ActorSystem.class));
         return Future.fromJdkCompletableFuture(
             bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
         ).map(RequestBody::new);

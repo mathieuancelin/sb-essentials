@@ -67,7 +67,7 @@ public static class MyController {
         );
     });
 
-    // Actions compoisition
+    // Actions composition
     private static Action LoggedAction = LogBefore.andThen(LogAfter);
 
     @GetMapping("/hello")

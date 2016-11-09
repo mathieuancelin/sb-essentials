@@ -26,7 +26,7 @@ public interface Action {
     }
 
     default Future<Result> sync(Function<RequestContext, Result> block) {
-        return sync(Actions.EXECUTOR_SERVICE, block);
+        return sync(Actions.executionContext(), block);
     }
 
     default Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
@@ -41,7 +41,7 @@ public interface Action {
     }
 
     default Future<Result> async(Function<RequestContext, Future<Result>> block) {
-        return async(Actions.EXECUTOR_SERVICE, block);
+        return async(Actions.executionContext(), block);
     }
 
     default Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
@@ -53,7 +53,7 @@ public interface Action {
             RequestContext rc = new RequestContext(HashMap.empty(), Actions.webApplicationContext, request, response);
             return Future.async(() -> innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
                 Future.successful(Actions.transformError(t, rc))
-            , Actions.EXECUTOR_SERVICE);
+            , Actions.executionContext());
         } else {
             return Future.successful(Actions.transformError(new RuntimeException("RequestAttributes is not an instance of "), null));
         }

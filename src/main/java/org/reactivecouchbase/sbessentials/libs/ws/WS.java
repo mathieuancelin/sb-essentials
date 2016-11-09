@@ -27,10 +27,10 @@ public class WS {
         WS.webApplicationContext = webApplicationContext;
     }
 
-    //
     public static Future<WSResponse> call(String host, HttpRequest request) {
         ActorSystem system = WS.webApplicationContext.getBean(ActorSystem.class);
-        ActorMaterializer materializer = ActorMaterializer.create(system);
+        //ActorMaterializer materializer = ActorMaterializer.create(system);
+        ActorMaterializer materializer = WS.webApplicationContext.getBean(ActorMaterializer.class);
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
                 Http.get(system).outgoingConnection(host);
         CompletionStage<HttpResponse> responseFuture =

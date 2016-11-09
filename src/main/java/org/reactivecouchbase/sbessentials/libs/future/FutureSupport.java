@@ -35,8 +35,8 @@ public class FutureSupport {
 
         private final ActorMaterializer materializer;
 
-        public FutureReturnValueHandler(ActorSystem system) {
-            this.materializer = ActorMaterializer.create(system);
+        public FutureReturnValueHandler(ActorMaterializer materializer) {
+            this.materializer = materializer;
         }
 
         @Override

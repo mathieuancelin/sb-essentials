@@ -1,5 +1,6 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
+import akka.stream.ActorMaterializer;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.concurrent.NamedExecutors;
 import org.reactivecouchbase.functional.Option;
@@ -28,8 +29,13 @@ public class Actions {
         Actions.webApplicationContext = webApplicationContext;
     }
 
-    static final ExecutorService EXECUTOR_SERVICE =
-            NamedExecutors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, "ActionsExecutor");
+    static ExecutorService executionContext() {
+        return webApplicationContext.getBean(ExecutorService.class);
+    }
+
+    static ActorMaterializer materializer() {
+        return webApplicationContext.getBean(ActorMaterializer.class);
+    }
 
     // TODO : add global filters
     static final Action EMPTY = (request, block) -> {

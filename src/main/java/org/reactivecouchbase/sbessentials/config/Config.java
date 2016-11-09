@@ -1,6 +1,7 @@
 package org.reactivecouchbase.sbessentials.config;
 
 import akka.actor.ActorSystem;
+import akka.stream.ActorMaterializer;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.NamedExecutors;
 import org.reactivecouchbase.sbessentials.libs.future.FutureSupport;
@@ -8,6 +9,7 @@ import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.web.context.request.async.TimeoutCallableProcessingInterceptor;
@@ -24,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Config {
 
     private final ActorSystem system = ActorSystem.create("SpringBootAppSystem");
+    private final ActorMaterializer materializer = ActorMaterializer.create(system);
     private final AtomicReference<ExecutorService> globalExecutorRef = new AtomicReference<>(null);
 
     @Value("${app.config.async.timeout}")
@@ -36,6 +39,17 @@ public class Config {
     public ActorSystem actorSystem() {
         return system;
     }
+
+    @Bean
+    public ActorMaterializer actorMaterializer() {
+        return materializer;
+    }
+
+    // no idea which one is better ...
+    // @Bean @Scope("prototype")
+    // public ActorMaterializer actorMaterializer() {
+    //     return ActorMaterializer.create(system);
+    // }
 
     @Bean
     public ExecutorService globalExecutor() {
@@ -70,7 +84,8 @@ public class Config {
 
             @Override
             public void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers) {
-                returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(system));
+                // returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(ActorMaterializer.create(system)));
+                returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(actorMaterializer()));
             }
         };
     }
