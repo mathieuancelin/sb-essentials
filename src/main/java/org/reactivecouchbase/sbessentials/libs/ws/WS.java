@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class WS {
@@ -36,5 +37,12 @@ public class WS {
                         .via(connectionFlow)
                         .runWith(Sink.<HttpResponse>head(), materializer);
         return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new);
+    }
+
+    public static WSRequest host(String host) {
+        ActorSystem system = WS.webApplicationContext.getBean(ActorSystem.class);
+        Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
+                Http.get(system).outgoingConnection(host);
+        return new WSRequest(system, connectionFlow, host);
     }
 }

@@ -3,6 +3,8 @@ package org.reactivecouchbase.sbessentiels.tests;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
+import akka.http.javadsl.model.HttpMethod;
+import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.stream.javadsl.Source;
@@ -155,6 +157,32 @@ public class BasicResultsTest {
     }
 
     @Test
+    public void testAsyncJsonResult2() throws Exception {
+        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody =
+            WS.host("http://localhost:7001")
+                .withPath("/tests/ws2")
+                .withMethod(HttpMethods.GET)
+                .withHeader("Api-Key", "12345")
+                .call()
+                .flatMap(r -> r.body().map(b ->
+                    Tuple.of(
+                        b.json(),
+                        r.headers()
+                    )
+                ));
+        Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        JsObject jsonBody = body._1.asObject();
+        System.out.println(jsonBody.pretty());
+        Assert.assertTrue(jsonBody.exists("latitude"));
+        Assert.assertTrue(jsonBody.exists("longitude"));
+        Assert.assertTrue(jsonBody.exists("ip"));
+        Assert.assertTrue(jsonBody.exists("city"));
+        Assert.assertTrue(jsonBody.exists("country_name"));
+        Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+    }
+
+    @Test
     public void testPostJsonResult() throws Exception {
         String uuid = UUID.randomUUID().toString();
         Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
@@ -170,7 +198,7 @@ public class BasicResultsTest {
             )
         ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
-        Assert.assertEquals(Json.obj().with("uuid", uuid), body._1);
+        Assert.assertEquals(Json.obj().with("uuid", uuid).with("processed_by", "SB"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
@@ -291,15 +319,15 @@ public class BasicResultsTest {
             return Actions.sync(ctx -> {
 
                 Result result = Ok.stream(
-                        Source.tick(
-                                FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
-                                FiniteDuration.apply(1, TimeUnit.SECONDS),
-                                ""
-                        )
-                                .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
-                                .map(Json::stringify)
-                                .map(j -> "data: " + j)
-                                .map(j -> j + "\n\n")
+                    Source.tick(
+                        FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
+                        FiniteDuration.apply(1, TimeUnit.SECONDS),
+                        ""
+                    )
+                    .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
+                    .map(Json::stringify)
+                    .map(j -> "data: " + j)
+                    .map(j -> j + "\n\n")
                 ).as("text/event-stream");
 
                 result.materializedValue(Cancellable.class).andThen(ttry -> {
@@ -349,8 +377,11 @@ public class BasicResultsTest {
 
         @PostMapping("/post")
         public Future<Result> testPost() {
-            return ApiManagedAction.sync(ctx ->
-                Ok.chunked(ctx.bodyAsStream()).as("application/json")
+            return ApiManagedAction.async(ctx ->
+                ctx.body()
+                    .map(body -> body.asJson().asObject())
+                .map(payload -> payload.with("processed_by", "SB"))
+                .map(Ok::json)
             );
         }
 
@@ -361,6 +392,19 @@ public class BasicResultsTest {
                             .flatMap(WSResponse::body)
                             .map(r -> r.json().pretty())
                             .map(p -> Ok.json(p))
+            );
+        }
+
+        @GetMapping("/ws2")
+        public Future<Result> testWS2() {
+            return ApiManagedAction.async(ctx ->
+                    WS.host("http://freegeoip.net")
+                        .withPath("/json/")
+                        .withHeader("Sent-At", System.currentTimeMillis() + "")
+                        .call()
+                        .flatMap(WSResponse::body)
+                        .map(r -> r.json().pretty())
+                        .map(p -> Ok.json(p))
             );
         }
 

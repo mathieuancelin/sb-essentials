@@ -48,10 +48,12 @@ public class WSResponse {
     }
 
     public List<WSCookie> cookies() {
+        // TODO
         throw new RuntimeException("Not implemented yet");
     }
 
     public Option<WSCookie> cookie(String name) {
+        // TODO
         throw new RuntimeException("Not implemented yet");
     }
 

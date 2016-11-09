@@ -8,22 +8,14 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.common.Throwables;
-import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
-import org.reactivecouchbase.json.JsValue;
-import org.reactivecouchbase.json.Json;
 import org.springframework.web.context.WebApplicationContext;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class RequestContext {
 
@@ -35,11 +27,19 @@ public class RequestContext {
 
     private final HttpServletResponse response;
 
+    private final Map<String, List<String>> headers;
+
     public RequestContext(HashMap<String, Object> state, WebApplicationContext applicationContext, HttpServletRequest request, HttpServletResponse response) {
         this.state = state;
         this.applicationContext = applicationContext;
         this.request = request;
         this.response = response;
+        Map<String, List<String>> _headers = HashMap.empty();
+        ArrayList<String> headerNames = Collections.list(request.getHeaderNames());
+        for (String name : headerNames) {
+            _headers = _headers.put(name, List.ofAll(Collections.list(request.getHeaders(name))));
+        }
+        this.headers = _headers;
     }
 
     public <T> T getBean(Class<T> clazz) {
@@ -74,7 +74,12 @@ public class RequestContext {
         return response;
     }
 
-    private final AtomicReference<ByteString> _bodyAsBytes = new AtomicReference<>(null);
+    public Future<RequestBody> body() {
+        ActorMaterializer materializer = ActorMaterializer.create(Actions.webApplicationContext.getBean(ActorSystem.class));
+        return Future.fromJdkCompletableFuture(
+            bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
+        ).map(RequestBody::new);
+    }
 
     public Source<ByteString, ?> bodyAsStream() {
         return StreamConverters.fromInputStream(() -> getRequest().getInputStream());
@@ -85,50 +90,6 @@ public class RequestContext {
     }
 
     public Map<String, List<String>> headers() {
-        throw new RuntimeException("Not implemented yet");
-    }
-
-    public ByteString bodyAsBytes() {
-        if (_bodyAsBytes.get() == null) {
-            ActorMaterializer materializer = ActorMaterializer.create(Actions.webApplicationContext.getBean(ActorSystem.class));
-            Future<ByteString> fource = Future.fromJdkCompletableFuture(
-                bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
-            );
-            ByteString bodyAsString = Await.resultForever(fource);
-            _bodyAsBytes.compareAndSet(null, bodyAsString);
-        }
-        return _bodyAsBytes.get();
-    }
-
-    public String bodyAsString() {
-        return bodyAsBytes().utf8String();
-    }
-
-    public JsValue bodyAsJson() {
-        return Json.parse(bodyAsString());
-    }
-
-    public Node bodyAsXml() {
-        try {
-            return DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                    .parse(new InputSource(new StringReader(bodyAsString())));
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
-    public Map<String, List<String>> bodyAsURLForm() {
-        Map<String, List<String>> form = HashMap.empty();
-        String body = bodyAsString();
-        List<String> parts = List.ofAll(Arrays.asList(body.split("&")));
-        for (String part : parts) {
-            String key = part.split("=")[0];
-            String value = part.split("=")[1];
-            if (!form.containsKey(key)) {
-                form = form.put(key, List.empty());
-            }
-            form = form.put(key, form.get(key).get().append(value));
-        }
-        return form;
+        return headers;
     }
 }
