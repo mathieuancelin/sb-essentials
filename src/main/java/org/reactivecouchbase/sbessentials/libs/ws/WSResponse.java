@@ -14,15 +14,13 @@ import org.reactivecouchbase.functional.Option;
 
 public class WSResponse {
 
-    public final HttpResponse underlying;
-
+    private final HttpResponse underlying;
     private final Map<String, List<String>> headers;
 
-    public WSResponse(HttpResponse underlying) {
+    WSResponse(HttpResponse underlying) {
         this.underlying = underlying;
         Map<String, List<String>> _headers = HashMap.empty();
         for (HttpHeader header : underlying.getHeaders()) {
-            // System.out.println("received header : " + header.toString());
             if (!_headers.containsKey(header.name())) {
                 _headers = _headers.put(header.name(), List.empty());
             }
@@ -45,16 +43,6 @@ public class WSResponse {
 
     public Option<String> header(String name) {
         return Option.fromJdkOptional(underlying.getHeader(name)).map(HttpHeader::value);
-    }
-
-    public List<WSCookie> cookies() {
-        // TODO
-        throw new RuntimeException("Not implemented yet");
-    }
-
-    public Option<WSCookie> cookie(String name) {
-        // TODO
-        throw new RuntimeException("Not implemented yet");
     }
 
     public Future<WSBody> body() {

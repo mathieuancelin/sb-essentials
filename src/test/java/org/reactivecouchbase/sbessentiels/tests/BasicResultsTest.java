@@ -3,12 +3,8 @@ package org.reactivecouchbase.sbessentiels.tests;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
-import akka.http.javadsl.model.HttpMethod;
 import akka.http.javadsl.model.HttpMethods;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.headers.RawHeader;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import javaslang.collection.Traversable;
@@ -86,7 +82,7 @@ public class BasicResultsTest {
 
     @Test
     public void testTextResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001", HttpRequest.GET("/tests/text"))
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/text").call()
             .flatMap(r -> r.body().map(b ->
                 Tuple.of(
                     b.body(),
@@ -101,14 +97,16 @@ public class BasicResultsTest {
 
     @Test
     public void testHugeTextResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-            HttpRequest.GET("/tests/huge").addHeader(RawHeader.create("Api-Key", "12345"))
-        ).flatMap(r -> r.body().map(b ->
-            Tuple.of(
-                b.body(),
-                r.headers()
-            )
-        ));
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/huge")
+            .withHeader("Api-Key", "12345")
+            .call()
+            .flatMap(r -> r.body().map(b ->
+                Tuple.of(
+                    b.body(),
+                    r.headers()
+                )
+            ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(TestController.VERY_HUGE_TEXT + "\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
@@ -117,16 +115,16 @@ public class BasicResultsTest {
 
     @Test
     public void testJsonResult() throws Exception {
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-            HttpRequest
-                .GET("/tests/json")
-                .addHeader(RawHeader.create("Api-Key", "12345"))
-        ).flatMap(r -> r.body().map(b ->
-            Tuple.of(
-                b.json(),
-                r.headers()
-            )
-        ));
+        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/json")
+            .withHeader("Api-Key", "12345")
+            .call()
+            .flatMap(r -> r.body().map(b ->
+                Tuple.of(
+                    b.json(),
+                    r.headers()
+                )
+            ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(Json.obj().with("message", "Hello World!"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
@@ -135,18 +133,20 @@ public class BasicResultsTest {
 
     @Test
     public void testAsyncJsonResult() throws Exception {
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-                HttpRequest
-                        .GET("/tests/ws")
-                        .addHeader(RawHeader.create("Api-Key", "12345"))
-        ).flatMap(r -> r.body().map(b ->
+        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/ws")
+            .withHeader("Api-Key", "12345")
+            .withQueryParam("q", "81.246.24.51")
+            .call()
+            .flatMap(r -> r.body().map(b ->
                 Tuple.of(
-                        b.json(),
-                        r.headers()
+                    b.json(),
+                    r.headers()
                 )
-        ));
+            ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         JsObject jsonBody = body._1.asObject();
+        System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("latitude"));
         Assert.assertTrue(jsonBody.exists("longitude"));
         Assert.assertTrue(jsonBody.exists("ip"));
@@ -158,18 +158,16 @@ public class BasicResultsTest {
 
     @Test
     public void testAsyncJsonResult2() throws Exception {
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody =
-            WS.host("http://localhost:7001")
-                .withPath("/tests/ws2")
-                .withMethod(HttpMethods.GET)
-                .withHeader("Api-Key", "12345")
-                .call()
-                .flatMap(r -> r.body().map(b ->
-                    Tuple.of(
-                        b.json(),
-                        r.headers()
-                    )
-                ));
+        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/ws2")
+            .withHeader("Api-Key", "12345")
+            .call()
+            .flatMap(r -> r.body().map(b ->
+                Tuple.of(
+                    b.json(),
+                    r.headers()
+                )
+            ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         JsObject jsonBody = body._1.asObject();
         System.out.println(jsonBody.pretty());
@@ -185,18 +183,18 @@ public class BasicResultsTest {
     @Test
     public void testPostJsonResult() throws Exception {
         String uuid = UUID.randomUUID().toString();
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-                HttpRequest
-                        .POST("/tests/post")
-                        .addHeader(RawHeader.create("Api-Key", "12345"))
-                        .addHeader(RawHeader.create("Content-Type", "application/json"))
-                        .withEntity(ByteString.fromString(Json.obj().with("uuid", uuid).stringify()))
-        ).flatMap(r -> r.body().map(b ->
-            Tuple.of(
-                b.json(),
-                r.headers()
-            )
-        ));
+        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/post")
+            .withMethod(HttpMethods.POST)
+            .withHeader("Api-Key", "12345")
+            .withHeader("Content-Type", "application/json")
+            .withBody(Json.obj().with("uuid", uuid))
+            .call().flatMap(r -> r.body().map(b ->
+                Tuple.of(
+                    b.json(),
+                    r.headers()
+                )
+            ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(Json.obj().with("uuid", uuid).with("processed_by", "SB"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
@@ -205,16 +203,16 @@ public class BasicResultsTest {
 
     @Test
     public void testHtmlResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-                HttpRequest
-                        .GET("/tests/html")
-                        .addHeader(RawHeader.create("Api-Key", "12345"))
-        ).flatMap(r -> r.body().map(b ->
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/html")
+            .withHeader("Api-Key", "12345")
+            .call()
+            .flatMap(r -> r.body().map(b ->
                 Tuple.of(
-                        b.body(),
-                        r.headers()
+                    b.body(),
+                    r.headers()
                 )
-        ));
+            ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("<h1>Hello World!</h1>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
@@ -223,16 +221,17 @@ public class BasicResultsTest {
 
     @Test
     public void testSSEResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.call("http://localhost:7001",
-                HttpRequest
-                        .GET("/tests/sse")
-                        .addHeader(RawHeader.create("Api-Key", "12345"))
-        ).flatMap(r -> r.body().map(b ->
+        Thread.sleep(120000);
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/sse")
+            .withHeader("Api-Key", "12345")
+            .call()
+            .flatMap(r -> r.body().map(b ->
                 Tuple.of(
-                        b.body(),
-                        r.headers()
+                    b.body(),
+                    r.headers()
                 )
-        ));
+            ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         java.util.List<JsObject> parts = Arrays.asList(body._1.split("\n"))
                 .stream()
@@ -326,8 +325,7 @@ public class BasicResultsTest {
                     )
                     .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
                     .map(Json::stringify)
-                    .map(j -> "data: " + j)
-                    .map(j -> j + "\n\n")
+                    .map(j -> "data: " + j + "\n\n")
                 ).as("text/event-stream");
 
                 result.materializedValue(Cancellable.class).andThen(ttry -> {
@@ -388,23 +386,47 @@ public class BasicResultsTest {
         @GetMapping("/ws")
         public Future<Result> testWS() {
             return ApiManagedAction.async(ctx ->
-                    WS.call("http://freegeoip.net", HttpRequest.create("/json/"))
-                            .flatMap(WSResponse::body)
-                            .map(r -> r.json().pretty())
-                            .map(p -> Ok.json(p))
+                WS.host("http://freegeoip.net").withPath("/json/")
+                    .call()
+                    .flatMap(WSResponse::body)
+                    .map(r -> r.json().pretty())
+                    .map(p -> Ok.json(p))
             );
         }
 
         @GetMapping("/ws2")
         public Future<Result> testWS2() {
             return ApiManagedAction.async(ctx ->
-                    WS.host("http://freegeoip.net")
-                        .withPath("/json/")
-                        .withHeader("Sent-At", System.currentTimeMillis() + "")
-                        .call()
-                        .flatMap(WSResponse::body)
-                        .map(r -> r.json().pretty())
-                        .map(p -> Ok.json(p))
+                WS.host("http://freegeoip.net")
+                    .withPath("/json/")
+                    .withHeader("Sent-At", System.currentTimeMillis() + "")
+                    .call()
+                    .flatMap(WSResponse::body)
+                    .map(r -> r.json().pretty())
+                    .map(p -> Ok.json(p))
+            );
+        }
+
+        @GetMapping("/download")
+        public Future<Result> testBigDownload() {
+            return Actions.async(ctx ->
+                WS.host("http://releases.ubuntu.com")
+                    .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
+                    .withHeader("From", "SB")
+                    .call()
+                    .map(r -> Ok.chunked(r.bodyAsStream()).as("application/octet-stream"))
+            );
+        }
+
+        @GetMapping("/bad")
+        public Future<Result> testBigBadDownload() {
+            return Actions.async(ctx ->
+                WS.host("http://releases.ubuntu.com")
+                    .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
+                    .withHeader("From", "SB")
+                    .call()
+                    .flatMap(r -> r.body())
+                    .map(r -> Ok.binary(r.bytes()))
             );
         }
 

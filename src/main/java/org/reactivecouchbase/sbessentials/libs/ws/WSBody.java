@@ -12,14 +12,19 @@ import java.io.StringReader;
 
 public class WSBody {
 
-    public final ByteString bodyAsBytes;
+    private final ByteString underlying;
 
-    public WSBody(ByteString bodyAsBytes) {
-        this.bodyAsBytes = bodyAsBytes;
+    public WSBody(ByteString underlying) {
+        this.underlying = underlying;
     }
 
+    public ByteString bytes() {
+        return underlying;
+    }
+
+
     public String body() {
-        return bodyAsBytes.utf8String();
+        return underlying.utf8String();
     }
 
     public JsValue json() {

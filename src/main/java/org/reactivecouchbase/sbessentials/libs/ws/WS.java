@@ -27,6 +27,7 @@ public class WS {
         WS.webApplicationContext = webApplicationContext;
     }
 
+    //
     public static Future<WSResponse> call(String host, HttpRequest request) {
         ActorSystem system = WS.webApplicationContext.getBean(ActorSystem.class);
         ActorMaterializer materializer = ActorMaterializer.create(system);

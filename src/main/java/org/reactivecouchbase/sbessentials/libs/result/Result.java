@@ -201,6 +201,13 @@ public class Result {
                 .build();
     }
 
+    public Result binary(ByteString bytes) {
+        return Result.copy(this)
+                .withSource(Source.single(bytes))
+                .withContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .build();
+    }
+
     public Result html(String html) {
         Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
         return Result.copy(this)
