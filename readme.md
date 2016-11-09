@@ -114,7 +114,9 @@ public static class MyController {
     @GetMapping("/ws")
     public Future<Result> testWS() {
         return Actions.async(ctx ->
-            WS.call("http://freegeoip.net", HttpRequest.create("/json/"))
+            WS.host("http://freegeoip.net")
+                .withPath("/json/")
+                .call()
                 .flatMap(WSResponse::body)
                 .map(r -> r.json().pretty())
                 .map(p -> Ok.json(p))
