@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.HttpMethods;
 import akka.stream.javadsl.Source;
+import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import javaslang.collection.Traversable;
@@ -169,7 +170,6 @@ public class BasicResultsTest {
             ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         JsObject jsonBody = body._1.asObject();
-        System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("latitude"));
         Assert.assertTrue(jsonBody.exists("longitude"));
         Assert.assertTrue(jsonBody.exists("ip"));
@@ -214,6 +214,24 @@ public class BasicResultsTest {
             ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("<h1>Hello World!</h1>", body._1);
+        Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+    }
+
+    @Test
+    public void testTemplateResult() throws Exception {
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+                .withPath("/tests/template")
+                .withHeader("Api-Key", "12345")
+                .call()
+                .flatMap(r -> r.body().map(b ->
+                        Tuple.of(
+                                b.body(),
+                                r.headers()
+                        )
+                ));
+        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Assert.assertEquals("<div><h1>Hello Mathieu!</h1></div>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
@@ -368,6 +386,13 @@ public class BasicResultsTest {
         public Future<Result> html() {
             return ApiManagedAction.sync(ctx ->
                 Ok.html("<h1>Hello World!</h1>")
+            );
+        }
+
+        @GetMapping("/template")
+        public Future<Result> template() {
+            return ApiManagedAction.sync(ctx ->
+                Ok.template("hello", HashMap.<String, String>empty().put("name", "Mathieu"))
             );
         }
 

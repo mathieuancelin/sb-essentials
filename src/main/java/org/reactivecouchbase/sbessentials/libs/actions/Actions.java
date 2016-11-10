@@ -64,10 +64,10 @@ public class Actions {
     }
 
     public static Result transformError(Throwable t, RequestContext request) {
-        if (request != null) {
-            // TODO : return the right representation based on accept
-            Option<String> accept = request.header("Accept");
-        }
+        // TODO : return the right representation based on accept
+        // if (request != null) {
+        //     Option<String> accept = request.header("Accept");
+        // }
         return Results.InternalServerError.json(Json.obj().with("error",
                 new ThrowableWriter(true).write(t)));
     }

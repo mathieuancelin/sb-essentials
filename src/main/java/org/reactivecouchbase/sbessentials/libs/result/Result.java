@@ -4,6 +4,11 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
+import com.github.jknack.handlebars.Context;
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
+import com.github.jknack.handlebars.io.TemplateLoader;
 import com.google.common.io.Files;
 import javaslang.collection.HashMap;
 import javaslang.collection.HashSet;
@@ -31,10 +36,19 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class Result {
 
     private static final Logger logger = LoggerFactory.getLogger(Result.class);
+
+    private static final Handlebars handlebars = TemplatesBoilerplate
+            .newBuilder()
+            .withPrefix("/templates")
+            .withSuffix(".html")
+            .build()
+            .handlebars();
 
     public final int status;
     public final Source<ByteString, ?> source;
@@ -216,13 +230,41 @@ public class Result {
                 .build();
     }
 
-    public Result template(String name, Map<String, Object> params) {
-        org.thymeleaf.context.Context context = new org.thymeleaf.context.Context();
-        org.thymeleaf.TemplateEngine templateEngine = Results.webApplicationContext.getBean(org.thymeleaf.TemplateEngine.class);
-        params.forEach(tuple -> context.setVariable(tuple._1, tuple._2));
-        String body = templateEngine.process(name, context);
-        return html(body);
+    private static final ConcurrentMap<String, Template> TEMPLATES_CACHE = new ConcurrentHashMap<>();
+
+    private static Template getTemplate(String name) {
+        if (!TEMPLATES_CACHE.containsKey(name)) {
+            try {
+                Template template = handlebars.compile(name);
+                TEMPLATES_CACHE.putIfAbsent(name, template);
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
+        }
+        return TEMPLATES_CACHE.get(name);
     }
+
+    public Result template(String name, Map<String, ?> params) {
+        try {
+            Context context = Context.newBuilder(new Object()).combine(params.toJavaMap()).build();
+            String template = getTemplate(name).apply(context);
+            Source<ByteString, ?> source = Source.single(ByteString.fromString(template));
+            return Result.copy(this)
+                    .withSource(source)
+                    .withContentType(MediaType.TEXT_HTML_VALUE)
+                    .build();
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    //public Result template(String name, Map<String, Object> params) {
+    //    org.thymeleaf.context.Context context = new org.thymeleaf.context.Context();
+    //    org.thymeleaf.TemplateEngine templateEngine = Results.webApplicationContext.getBean(org.thymeleaf.TemplateEngine.class);
+    //    params.forEach(tuple -> context.setVariable(tuple._1, tuple._2));
+    //    String body = templateEngine.process(name, context);
+    //    return html(body);
+    //}
 
     public Result chunked(Source<ByteString, ?> theStream) {
         return Result.copy(this).withSource(theStream).build();
