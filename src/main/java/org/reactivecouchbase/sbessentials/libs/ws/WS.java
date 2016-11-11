@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class WS {
@@ -29,8 +28,7 @@ public class WS {
 
     public static Future<WSResponse> call(String host, HttpRequest request) {
         ActorSystem system = WS.webApplicationContext.getBean(ActorSystem.class);
-        //ActorMaterializer materializer = ActorMaterializer.create(system);
-        ActorMaterializer materializer = WS.webApplicationContext.getBean(ActorMaterializer.class);
+        ActorMaterializer materializer = WS.webApplicationContext.getBean("ws-client-actor-materializer", ActorMaterializer.class);
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
                 Http.get(system).outgoingConnection(host);
         CompletionStage<HttpResponse> responseFuture =

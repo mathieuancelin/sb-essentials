@@ -22,7 +22,6 @@ public class WSBody {
         return underlying;
     }
 
-
     public String body() {
         return underlying.utf8String();
     }

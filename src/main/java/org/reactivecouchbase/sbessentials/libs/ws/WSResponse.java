@@ -46,8 +46,7 @@ public class WSResponse {
     }
 
     public Future<WSBody> body() {
-        // ActorMaterializer materializer = ActorMaterializer.create(WS.webApplicationContext.getBean(ActorSystem.class));
-        ActorMaterializer materializer = WS.webApplicationContext.getBean(ActorMaterializer.class);
+        ActorMaterializer materializer = WS.webApplicationContext.getBean("ws-client-actor-materializer", ActorMaterializer.class);
         Source<ByteString, ?> source = underlying.entity().getDataBytes();
         return Future.fromJdkCompletableFuture(
                 source.runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()

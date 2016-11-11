@@ -1,16 +1,14 @@
 package org.reactivecouchbase.sbessentials.libs.future;
 
 import akka.Done;
-import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import javaslang.collection.List;
 import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +24,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class FutureSupport {

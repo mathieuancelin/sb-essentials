@@ -34,7 +34,7 @@ public class Actions {
     }
 
     static ActorMaterializer materializer() {
-        return webApplicationContext.getBean(ActorMaterializer.class);
+        return webApplicationContext.getBean("blocking-actor-materializer", ActorMaterializer.class);
     }
 
     // TODO : add global filters
@@ -64,10 +64,7 @@ public class Actions {
     }
 
     public static Result transformError(Throwable t, RequestContext request) {
-        // TODO : return the right representation based on accept
-        // if (request != null) {
-        //     Option<String> accept = request.header("Accept");
-        // }
+        // always return JSON for now
         return Results.InternalServerError.json(Json.obj().with("error",
                 new ThrowableWriter(true).write(t)));
     }

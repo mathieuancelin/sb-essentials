@@ -258,14 +258,6 @@ public class Result {
         }
     }
 
-    //public Result template(String name, Map<String, Object> params) {
-    //    org.thymeleaf.context.Context context = new org.thymeleaf.context.Context();
-    //    org.thymeleaf.TemplateEngine templateEngine = Results.webApplicationContext.getBean(org.thymeleaf.TemplateEngine.class);
-    //    params.forEach(tuple -> context.setVariable(tuple._1, tuple._2));
-    //    String body = templateEngine.process(name, context);
-    //    return html(body);
-    //}
-
     public Result chunked(Source<ByteString, ?> theStream) {
         return Result.copy(this).withSource(theStream).build();
     }

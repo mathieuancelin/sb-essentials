@@ -1,6 +1,5 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
-import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;

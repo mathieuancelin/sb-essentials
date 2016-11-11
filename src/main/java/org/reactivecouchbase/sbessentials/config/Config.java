@@ -2,6 +2,7 @@ package org.reactivecouchbase.sbessentials.config;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import com.typesafe.config.ConfigFactory;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.NamedExecutors;
 import org.reactivecouchbase.sbessentials.libs.future.FutureSupport;
@@ -9,7 +10,6 @@ import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.web.context.request.async.TimeoutCallableProcessingInterceptor;
@@ -19,15 +19,36 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
 public class Config {
 
-    private final ActorSystem system = ActorSystem.create("SpringBootAppSystem");
-    private final ActorMaterializer materializer = ActorMaterializer.create(system);
+    private final com.typesafe.config.Config config = ConfigFactory.load();
+
+    private final ActorSystem system = ActorSystem.create("global-system",
+            config.atPath("systems.global").withFallback(ConfigFactory.empty()));
+    private final ActorMaterializer generalPurposeMaterializer = ActorMaterializer.create(system);
+
+    private final ActorSystem wsSystem = ActorSystem.create("ws-system",
+            config.atPath("systems.ws").withFallback(ConfigFactory.empty()));
+    private final ActorMaterializer wsClientActorMaterializer = ActorMaterializer.create(wsSystem);
+
+    private final ActorSystem blockingSystem = ActorSystem.create("blocking-system",
+            config.atPath("systems.blocking").withFallback(ConfigFactory.empty()));
+    private final ActorMaterializer blockingActorMaterializer = ActorMaterializer.create(blockingSystem);
+
     private final AtomicReference<ExecutorService> globalExecutorRef = new AtomicReference<>(null);
+
+    {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            system.shutdown();
+            wsSystem.shutdown();
+            blockingSystem.shutdown();
+        }));
+    }
 
     @Value("${app.config.async.timeout}")
     public String timeoutDuration;
@@ -40,19 +61,28 @@ public class Config {
         return system;
     }
 
-    @Bean
+    @Bean(name = "general-purpose-materializer")
     public ActorMaterializer actorMaterializer() {
-        return materializer;
+        return generalPurposeMaterializer;
     }
 
-    // no idea which one is better ...
-    // @Bean @Scope("prototype")
-    // public ActorMaterializer actorMaterializer() {
-    //     return ActorMaterializer.create(system);
-    // }
+    @Bean(name = "blocking-actor-materializer")
+    public ActorMaterializer blockingActorMaterializer() {
+        return blockingActorMaterializer;
+    }
+
+    @Bean(name = "ws-client-actor-materializer")
+    public ActorMaterializer wsClientActorMaterializer() {
+        return wsClientActorMaterializer;
+    }
 
     @Bean
-    public ExecutorService globalExecutor() {
+    public Executor globalExecutor() {
+        return system.dispatcher();
+    }
+
+    @Bean
+    public ExecutorService globalExecutorService() {
         if (globalExecutorRef.get() == null) {
             ExecutorService executorService = NamedExecutors.newFixedThreadPool(Integer.valueOf(threadCount), "GlobalExecutor");
             globalExecutorRef.compareAndSet(null, executorService);
@@ -60,9 +90,8 @@ public class Config {
         return globalExecutorRef.get();
     }
 
-
     @Bean
-    public WebMvcConfigurer rxJavaWebMvcConfiguration() {
+    public WebMvcConfigurer reactiveWebMvcConfiguration() {
         return new WebMvcConfigurerAdapter() {
 
             @Override
@@ -84,8 +113,7 @@ public class Config {
 
             @Override
             public void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers) {
-                // returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(ActorMaterializer.create(system)));
-                returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(actorMaterializer()));
+                returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(blockingActorMaterializer()));
             }
         };
     }
