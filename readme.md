@@ -1,17 +1,17 @@
 # sb-essentials
 
-`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every HTTP actionStep is defined to return a `FinalAction` and use `Akka Streams` under the hood.
+`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every HTTP actionStep is defined to return an `Action` and use `Akka Streams` under the hood.
 
 ```java
 @GetMapping("/hello")
-public FinalAction text() {
+public Action text() {
     ...
 }
 ```
 
 ## Actions
 
-Every Spring actionStep returns a `FinalAction` that can be composed from `Action
+Every Spring actionStep returns a `Action` that can be composed from `ActionStep`s
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
@@ -26,15 +26,15 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 public static class MyController {
 
     @GetMapping("/hello")
-    public FinalAction text() {
-        return FinalAction.sync(ctx ->
+    public Action text() {
+        return Action.sync(ctx ->
             Ok.text("Hello World!\n")
         );
     }
 }
 ```
 
-`Actions`s can easily be composed
+`Actions`s can easily be composed from `ActionStep`s
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
@@ -49,14 +49,14 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 public static class MyController {
 
     // Action that logs before request
-    private static Action LogBefore = (req, block) -> {
+    private static ActionStep LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
         logger.info("[Log] before actionStep -> {}", req.getRequest().getRequestURI());
         return block.apply(req.setValue("start", start));
     };
 
     // Action that logs after request
-    private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
+    private static ActionStep LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
         logger.info(
             "[Log] after actionStep -> {} : took {}",
             req.getRequest().getRequestURI(),
@@ -67,11 +67,11 @@ public static class MyController {
         );
     });
 
-    // Actions composition
-    private static Action LoggedAction = LogBefore.andThen(LogAfter);
+    // ActionSteps composition
+    private static ActionStep LoggedAction = LogBefore.andThen(LogAfter);
 
     @GetMapping("/hello")
-    public FinalAction text() {
+    public Action text() {
         // Use composed actionStep
         return LoggedAction.sync(ctx ->
             Ok.text("Hello World!\n")
@@ -96,15 +96,15 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 public static class MyController {
 
     @GetMapping("/hello")
-    public FinalAction text() {
-        return FinalAction.sync(ctx ->
+    public Action text() {
+        return Action.sync(ctx ->
             Ok.text("Hello World!\n")
         );
     }
 
     @GetMapping("/json")
-    public FinalAction json() {
-        return FinalAction.sync(ctx ->
+    public Action json() {
+        return Action.sync(ctx ->
             Ok.json(
                 Json.obj().with("message", "Hello World!")
             )
@@ -112,8 +112,8 @@ public static class MyController {
     }
 
     @GetMapping("/ws")
-    public FinalAction testWS() {
-        return FinalAction.async(ctx ->
+    public Action testWS() {
+        return Action.async(ctx ->
             WS.host("http://freegeoip.net")
                 .withPath("/json/")
                 .call()
@@ -125,8 +125,8 @@ public static class MyController {
 
     // Implement SSE ;-)
     @GetMapping("/sse")
-    public FinalAction testStream() {
-        return FinalAction.sync(ctx -> {
+    public Action testStream() {
+        return Action.sync(ctx -> {
             return Ok.stream(
                 Source.tick(
                     FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
