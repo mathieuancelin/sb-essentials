@@ -1,6 +1,6 @@
 # sb-essentials
 
-`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every action is defined as to return a `Future<Result>` and use `Akka Streams` under the hood.
+`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every HTTP action is defined to return a `FinalAction` and use `Akka Streams` under the hood.
 
 ```java
 @GetMapping("/hello")
@@ -11,7 +11,7 @@ public FinalAction text() {
 
 ## Actions
 
-Every Spring action returns a `FinalAction` can can be composed from `Action
+Every Spring action returns a `FinalAction` that can be composed from `Action
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
