@@ -5,6 +5,7 @@ import akka.stream.ActorMaterializer;
 import com.typesafe.config.ConfigFactory;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.NamedExecutors;
+import org.reactivecouchbase.sbessentials.libs.actions.FinalActionSupport;
 import org.reactivecouchbase.sbessentials.libs.future.FutureSupport;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -113,7 +114,8 @@ public class Config {
 
             @Override
             public void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers) {
-                returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(blockingActorMaterializer()));
+                // returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(blockingActorMaterializer()));
+                returnValueHandlers.add(new FinalActionSupport.FinalActionReturnValueHandler(globalExecutorService(), blockingActorMaterializer()));
             }
         };
     }

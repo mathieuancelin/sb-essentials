@@ -23,6 +23,7 @@ import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.config.Config;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
@@ -275,8 +276,7 @@ public class BasicResultsTest {
 
         private final static Logger logger = LoggerFactory.getLogger(TestController.class);
 
-        @Autowired
-        ActorSystem actorSystem;
+        @Autowired ActorSystem actorSystem;
 
         private static Action ApiKeyCheck = (req, block) -> req.header("Api-Key").fold(
                 () -> {
@@ -330,8 +330,8 @@ public class BasicResultsTest {
                 .andThen(LogAfter);
 
         @RequestMapping(method = RequestMethod.GET, path = "/sse")
-        public Future<Result> testStream() {
-            return Actions.sync(ctx -> {
+        public FinalAction testStream() {
+            return FinalAction.sync(ctx -> {
 
                 Result result = Ok.stream(
                     Source.tick(
@@ -362,42 +362,42 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/text")
-        public Future<Result> text() {
-            return Actions.sync(ctx ->
+        public FinalAction text() {
+            return FinalAction.sync(ctx ->
                 Ok.text("Hello World!\n")
             );
         }
 
         @GetMapping("/huge")
-        public Future<Result> hugeText() {
+        public FinalAction hugeText() {
             return ApiManagedAction.sync(ctx ->
                 Ok.text(VERY_HUGE_TEXT + "\n")
             );
         }
 
         @GetMapping("/json")
-        public Future<Result> json() {
+        public FinalAction json() {
             return ApiManagedAction.sync(ctx ->
                 Ok.json(Json.obj().with("message", "Hello World!"))
             );
         }
 
         @GetMapping("/html")
-        public Future<Result> html() {
+        public FinalAction html() {
             return ApiManagedAction.sync(ctx ->
                 Ok.html("<h1>Hello World!</h1>")
             );
         }
 
         @GetMapping("/template")
-        public Future<Result> template() {
+        public FinalAction template() {
             return ApiManagedAction.sync(ctx ->
                 Ok.template("hello", HashMap.<String, String>empty().put("name", "Mathieu"))
             );
         }
 
         @PostMapping("/post")
-        public Future<Result> testPost() {
+        public FinalAction testPost() {
             return ApiManagedAction.async(ctx ->
                 ctx.body()
                     .map(body -> body.asJson().asObject())
@@ -407,7 +407,7 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/ws")
-        public Future<Result> testWS() {
+        public FinalAction testWS() {
             return ApiManagedAction.async(ctx ->
                 WS.host("http://freegeoip.net").withPath("/json/")
                     .call()
@@ -418,7 +418,7 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/ws2")
-        public Future<Result> testWS2() {
+        public FinalAction testWS2() {
             return ApiManagedAction.async(ctx ->
                 WS.host("http://freegeoip.net")
                     .withPath("/json/")
@@ -431,8 +431,8 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/download")
-        public Future<Result> testBigDownload() {
-            return Actions.async(ctx ->
+        public FinalAction testBigDownload() {
+            return FinalAction.async(ctx ->
                 WS.host("http://releases.ubuntu.com")
                     .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
                     .withHeader("From", "SB")
@@ -442,8 +442,8 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/bad")
-        public Future<Result> testBigBadDownload() {
-            return Actions.async(ctx ->
+        public FinalAction testBigBadDownload() {
+            return FinalAction.async(ctx ->
                 WS.host("http://releases.ubuntu.com")
                     .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
                     .withHeader("From", "SB")

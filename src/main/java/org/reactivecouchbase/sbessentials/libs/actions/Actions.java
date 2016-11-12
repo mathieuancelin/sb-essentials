@@ -47,25 +47,25 @@ public class Actions {
         }
     };
 
-    public static Future<Result> sync(Function<RequestContext, Result> block) {
-        return EMPTY.sync(block);
-    }
-
-    public static Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
-        return EMPTY.sync(ec, block);
-    }
-
-    public static Future<Result> async(Function<RequestContext, Future<Result>> block) {
-        return EMPTY.async(block);
-    }
-
-    public static Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
-        return EMPTY.async(ec, block);
-    }
-
     public static Result transformError(Throwable t, RequestContext request) {
         // always return JSON for now
         return Results.InternalServerError.json(Json.obj().with("error",
                 new ThrowableWriter(true).write(t)));
     }
 }
+
+// public static Future<Result> sync(Function<RequestContext, Result> block) {
+//     return EMPTY.sync(block);
+// }
+//
+// public static Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
+//     return EMPTY.sync(ec, block);
+// }
+//
+// public static Future<Result> async(Function<RequestContext, Future<Result>> block) {
+//     return EMPTY.async(block);
+// }
+//
+// public static Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
+//     return EMPTY.async(ec, block);
+// }

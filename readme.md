@@ -4,19 +4,19 @@
 
 ```java
 @GetMapping("/hello")
-public Future<Result> text() {
+public FinalAction text() {
     ...
 }
 ```
 
 ## Actions
 
-Every Spring action is actually an `Action`
+Every Spring action returns a `FinalAction` can can be composed from `Action
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -26,20 +26,20 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 public static class MyController {
 
     @GetMapping("/hello")
-    public Future<Result> text() {
-        return Actions.sync(ctx ->
+    public FinalAction text() {
+        return FinalAction.sync(ctx ->
             Ok.text("Hello World!\n")
         );
     }
 }
 ```
 
-Actions can easily be composed
+`Actions`s can easily be composed
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -71,7 +71,7 @@ public static class MyController {
     private static Action LoggedAction = LogBefore.andThen(LogAfter);
 
     @GetMapping("/hello")
-    public Future<Result> text() {
+    public FinalAction text() {
         // Use composed action
         return LoggedAction.sync(ctx ->
             Ok.text("Hello World!\n")
@@ -86,7 +86,7 @@ public static class MyController {
 ```java
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -96,15 +96,15 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 public static class MyController {
 
     @GetMapping("/hello")
-    public Future<Result> text() {
-        return Actions.sync(ctx ->
+    public FinalAction text() {
+        return FinalAction.sync(ctx ->
             Ok.text("Hello World!\n")
         );
     }
 
     @GetMapping("/json")
-    public Future<Result> json() {
-        return Actions.sync(ctx ->
+    public FinalAction json() {
+        return FinalAction.sync(ctx ->
             Ok.json(
                 Json.obj().with("message", "Hello World!")
             )
@@ -112,8 +112,8 @@ public static class MyController {
     }
 
     @GetMapping("/ws")
-    public Future<Result> testWS() {
-        return Actions.async(ctx ->
+    public FinalAction testWS() {
+        return FinalAction.async(ctx ->
             WS.host("http://freegeoip.net")
                 .withPath("/json/")
                 .call()
@@ -125,8 +125,8 @@ public static class MyController {
 
     // Implement SSE ;-)
     @GetMapping("/sse")
-    public Future<Result> testStream() {
-        return Actions.sync(ctx -> {
+    public FinalAction testStream() {
+        return FinalAction.sync(ctx -> {
             return Ok.stream(
                 Source.tick(
                     FiniteDuration.apply(0, TimeUnit.MILLISECONDS),

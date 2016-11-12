@@ -25,37 +25,29 @@ public interface Action {
         }
     }
 
-    default Future<Result> sync(Function<RequestContext, Result> block) {
-        return sync(Actions.executionContext(), block);
-    }
-
-    default Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
-        return async(ec, req -> Future.async(() -> {
+    default FinalAction sync(Function<RequestContext, Result> block) {
+        return async(req -> Future.async(() -> {
             try {
                 return block.apply(req);
             } catch (Exception e) {
                 Actions.logger.error("Sync action error", e);
                 return Actions.transformError(e, req);
             }
-        }, ec));
+        }, Actions.executionContext()));
     }
 
-    default Future<Result> async(Function<RequestContext, Future<Result>> block) {
-        return async(Actions.executionContext(), block);
-    }
-
-    default Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
+    default FinalAction async(Function<RequestContext, Future<Result>> block) {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes) {
             ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
             HttpServletRequest request = servletRequestAttributes.getRequest();
             HttpServletResponse response = servletRequestAttributes.getResponse();
             RequestContext rc = new RequestContext(HashMap.empty(), Actions.webApplicationContext, request, response);
-            return Future.async(() -> innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
-                Future.successful(Actions.transformError(t, rc))
-            , Actions.executionContext());
+            return new FinalAction(this, rc, block);
         } else {
-            return Future.successful(Actions.transformError(new RuntimeException("RequestAttributes is not an instance of "), null));
+            return new FinalAction(this, null, rc ->
+                Future.successful(Actions.transformError(new RuntimeException("RequestAttributes is not an instance of "), null))
+            );
         }
     }
 
@@ -68,3 +60,37 @@ public interface Action {
         return combine(other);
     }
 }
+
+// default Future<Result> sync(Function<RequestContext, Result> block) {
+//     return sync(Actions.executionContext(), block);
+// }
+//
+// default Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
+//     return async(ec, req -> Future.async(() -> {
+//         try {
+//             return block.apply(req);
+//         } catch (Exception e) {
+//             Actions.logger.error("Sync action error", e);
+//             return Actions.transformError(e, req);
+//         }
+//     }, ec));
+// }
+//
+// default Future<Result> async(Function<RequestContext, Future<Result>> block) {
+//     return async(Actions.executionContext(), block);
+// }
+//
+// default Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
+//     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+//     if (requestAttributes instanceof ServletRequestAttributes) {
+//         ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
+//         HttpServletRequest request = servletRequestAttributes.getRequest();
+//         HttpServletResponse response = servletRequestAttributes.getResponse();
+//         RequestContext rc = new RequestContext(HashMap.empty(), Actions.webApplicationContext, request, response);
+//         return Future.async(() -> innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
+//             Future.successful(Actions.transformError(t, rc))
+//         , Actions.executionContext());
+//     } else {
+//         return Future.successful(Actions.transformError(new RuntimeException("RequestAttributes is not an instance of "), null));
+//     }
+// }
