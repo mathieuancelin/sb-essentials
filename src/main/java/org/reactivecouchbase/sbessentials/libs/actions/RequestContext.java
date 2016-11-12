@@ -15,6 +15,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class RequestContext {
 
@@ -79,6 +81,10 @@ public class RequestContext {
         return Future.fromJdkCompletableFuture(
             bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
         ).map(RequestBody::new);
+    }
+
+    public <T> Future<T> body(BiFunction<Map<String, List<String>>, Source<ByteString, ?>, Future<T>> bodyParser) {
+        return bodyParser.apply(headers, bodyAsStream());
     }
 
     public Source<ByteString, ?> bodyAsStream() {
