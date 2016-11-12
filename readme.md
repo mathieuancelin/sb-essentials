@@ -48,14 +48,14 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 @RequestMapping("/api")
 public static class MyController {
 
-    // Action that logs before request
+    // ActionStep that logs before request
     private static ActionStep LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
         logger.info("[Log] before actionStep -> {}", req.getRequest().getRequestURI());
         return block.apply(req.setValue("start", start));
     };
 
-    // Action that logs after request
+    // ActionStep that logs after request
     private static ActionStep LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
         logger.info(
             "[Log] after actionStep -> {} : took {}",
@@ -67,7 +67,7 @@ public static class MyController {
         );
     });
 
-    // ActionSteps composition
+    // previous ActionSteps composition as a new one
     private static ActionStep LoggedAction = LogBefore.andThen(LogAfter);
 
     @GetMapping("/hello")
