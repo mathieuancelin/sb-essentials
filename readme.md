@@ -1,6 +1,6 @@
 # sb-essentials
 
-`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every HTTP action is defined to return a `FinalAction` and use `Akka Streams` under the hood.
+`sb-essentials` is a small library to make Spring Boot livable and Streamable. Every HTTP actionStep is defined to return a `FinalAction` and use `Akka Streams` under the hood.
 
 ```java
 @GetMapping("/hello")
@@ -11,12 +11,12 @@ public FinalAction text() {
 
 ## Actions
 
-Every Spring action returns a `FinalAction` that can be composed from `Action
+Every Spring actionStep returns a `FinalAction` that can be composed from `Action
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -38,8 +38,8 @@ public static class MyController {
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -51,14 +51,14 @@ public static class MyController {
     // Action that logs before request
     private static Action LogBefore = (req, block) -> {
         Long start = System.currentTimeMillis();
-        logger.info("[Log] before action -> {}", req.getRequest().getRequestURI());
+        logger.info("[Log] before actionStep -> {}", req.getRequest().getRequestURI());
         return block.apply(req.setValue("start", start));
     };
 
     // Action that logs after request
     private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
         logger.info(
-            "[Log] after action -> {} : took {}",
+            "[Log] after actionStep -> {} : took {}",
             req.getRequest().getRequestURI(),
             Duration.of(
                 System.currentTimeMillis() - req.getValue("start", Long.class),
@@ -72,7 +72,7 @@ public static class MyController {
 
     @GetMapping("/hello")
     public FinalAction text() {
-        // Use composed action
+        // Use composed actionStep
         return LoggedAction.sync(ctx ->
             Ok.text("Hello World!\n")
         );
@@ -85,8 +85,8 @@ public static class MyController {
 
 ```java
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;

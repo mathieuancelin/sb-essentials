@@ -2,8 +2,6 @@ package org.reactivecouchbase.sbessentials.libs.actions;
 
 import akka.stream.ActorMaterializer;
 import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.concurrent.NamedExecutors;
-import org.reactivecouchbase.functional.Option;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.json.mapping.ThrowableWriter;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
@@ -15,18 +13,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
 @Component
-public class Actions {
+public class ActionsHelperInternal {
 
     static WebApplicationContext webApplicationContext;
 
-    static final Logger logger = LoggerFactory.getLogger(Actions.class);
+    static final Logger logger = LoggerFactory.getLogger(ActionsHelperInternal.class);
 
     @Autowired
     public void setWebApplicationContext(WebApplicationContext webApplicationContext) {
-        Actions.webApplicationContext = webApplicationContext;
+        ActionsHelperInternal.webApplicationContext = webApplicationContext;
     }
 
     static ExecutorService executionContext() {
@@ -38,7 +35,7 @@ public class Actions {
     }
 
     // TODO : add global filters
-    static final Action EMPTY = (request, block) -> {
+    static final ActionStep EMPTY = (request, block) -> {
         try {
             return block.apply(request);
         } catch (Exception e) {
@@ -47,25 +44,9 @@ public class Actions {
         }
     };
 
-    public static Result transformError(Throwable t, RequestContext request) {
+    static Result transformError(Throwable t, RequestContext request) {
         // always return JSON for now
         return Results.InternalServerError.json(Json.obj().with("error",
                 new ThrowableWriter(true).write(t)));
     }
 }
-
-// public static Future<Result> sync(Function<RequestContext, Result> block) {
-//     return EMPTY.sync(block);
-// }
-//
-// public static Future<Result> sync(ExecutorService ec, Function<RequestContext, Result> block) {
-//     return EMPTY.sync(ec, block);
-// }
-//
-// public static Future<Result> async(Function<RequestContext, Future<Result>> block) {
-//     return EMPTY.async(block);
-// }
-//
-// public static Future<Result> async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
-//     return EMPTY.async(ec, block);
-// }

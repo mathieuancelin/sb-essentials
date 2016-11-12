@@ -22,8 +22,8 @@ import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.config.Config;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
-import org.reactivecouchbase.sbessentials.libs.actions.FinalAction;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
@@ -64,7 +64,7 @@ public class BasicResultsTest {
 
     @Before
     public void injectStaticStuff() {
-        new Actions().setWebApplicationContext(ctx);
+        new ActionsHelperInternal().setWebApplicationContext(ctx);
         new Results().setWebApplicationContext(ctx);
         new WS().setWebApplicationContext(ctx);
     }
@@ -278,7 +278,7 @@ public class BasicResultsTest {
 
         @Autowired ActorSystem actorSystem;
 
-        private static Action ApiKeyCheck = (req, block) -> req.header("Api-Key").fold(
+        private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").fold(
                 () -> {
                     logger.info("No API KEY provided");
                     return Future.successful(BadRequest.json(Json.obj().with("error", "No API KEY provided")));
@@ -293,13 +293,13 @@ public class BasicResultsTest {
                 }
         );
 
-        private static Action LogBefore = (req, block) -> {
+        private static ActionStep LogBefore = (req, block) -> {
             Long start = System.currentTimeMillis();
             logger.info("[Log] before action -> {}", req.getRequest().getRequestURI());
             return block.apply(req.setValue("start", start));
         };
 
-        private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
+        private static ActionStep LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
             logger.info(
                     "[Log] after action -> {} : took {}",
                     req.getRequest().getRequestURI(),
@@ -307,7 +307,7 @@ public class BasicResultsTest {
             );
         });
 
-        private static Action Throttle(int limit, long perMillis) {
+        private static ActionStep Throttle(int limit, long perMillis) {
             AtomicLong next = new AtomicLong(System.currentTimeMillis());
             AtomicLong counter = new AtomicLong(0L);
             return (request, block) -> {
@@ -324,14 +324,14 @@ public class BasicResultsTest {
             };
         }
 
-        private static Action ApiManagedAction = LogBefore
+        private static ActionStep ApiManagedAction = LogBefore
                 .andThen(ApiKeyCheck)
                 .andThen(Throttle(2, 100))
                 .andThen(LogAfter);
 
         @RequestMapping(method = RequestMethod.GET, path = "/sse")
-        public FinalAction testStream() {
-            return FinalAction.sync(ctx -> {
+        public Action testStream() {
+            return Action.sync(ctx -> {
 
                 Result result = Ok.stream(
                     Source.tick(
@@ -362,42 +362,42 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/text")
-        public FinalAction text() {
-            return FinalAction.sync(ctx ->
+        public Action text() {
+            return Action.sync(ctx ->
                 Ok.text("Hello World!\n")
             );
         }
 
         @GetMapping("/huge")
-        public FinalAction hugeText() {
+        public Action hugeText() {
             return ApiManagedAction.sync(ctx ->
                 Ok.text(VERY_HUGE_TEXT + "\n")
             );
         }
 
         @GetMapping("/json")
-        public FinalAction json() {
+        public Action json() {
             return ApiManagedAction.sync(ctx ->
                 Ok.json(Json.obj().with("message", "Hello World!"))
             );
         }
 
         @GetMapping("/html")
-        public FinalAction html() {
+        public Action html() {
             return ApiManagedAction.sync(ctx ->
                 Ok.html("<h1>Hello World!</h1>")
             );
         }
 
         @GetMapping("/template")
-        public FinalAction template() {
+        public Action template() {
             return ApiManagedAction.sync(ctx ->
                 Ok.template("hello", HashMap.<String, String>empty().put("name", "Mathieu"))
             );
         }
 
         @PostMapping("/post")
-        public FinalAction testPost() {
+        public Action testPost() {
             return ApiManagedAction.async(ctx ->
                 ctx.body()
                     .map(body -> body.asJson().asObject())
@@ -407,7 +407,7 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/ws")
-        public FinalAction testWS() {
+        public Action testWS() {
             return ApiManagedAction.async(ctx ->
                 WS.host("http://freegeoip.net").withPath("/json/")
                     .call()
@@ -418,7 +418,7 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/ws2")
-        public FinalAction testWS2() {
+        public Action testWS2() {
             return ApiManagedAction.async(ctx ->
                 WS.host("http://freegeoip.net")
                     .withPath("/json/")
@@ -431,8 +431,8 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/download")
-        public FinalAction testBigDownload() {
-            return FinalAction.async(ctx ->
+        public Action testBigDownload() {
+            return Action.async(ctx ->
                 WS.host("http://releases.ubuntu.com")
                     .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
                     .withHeader("From", "SB")
@@ -442,8 +442,8 @@ public class BasicResultsTest {
         }
 
         @GetMapping("/bad")
-        public FinalAction testBigBadDownload() {
-            return FinalAction.async(ctx ->
+        public Action testBigBadDownload() {
+            return Action.async(ctx ->
                 WS.host("http://releases.ubuntu.com")
                     .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
                     .withHeader("From", "SB")

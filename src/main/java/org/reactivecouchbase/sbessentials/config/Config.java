@@ -5,8 +5,7 @@ import akka.stream.ActorMaterializer;
 import com.typesafe.config.ConfigFactory;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.NamedExecutors;
-import org.reactivecouchbase.sbessentials.libs.actions.FinalActionSupport;
-import org.reactivecouchbase.sbessentials.libs.future.FutureSupport;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +18,6 @@ import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -114,8 +112,7 @@ public class Config {
 
             @Override
             public void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers) {
-                // returnValueHandlers.add(new FutureSupport.FutureReturnValueHandler(blockingActorMaterializer()));
-                returnValueHandlers.add(new FinalActionSupport.FinalActionReturnValueHandler(globalExecutorService(), blockingActorMaterializer()));
+                returnValueHandlers.add(new ActionSupport.ActionReturnValueHandler(globalExecutorService(), blockingActorMaterializer()));
             }
         };
     }

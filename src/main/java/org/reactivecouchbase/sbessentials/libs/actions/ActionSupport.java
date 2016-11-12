@@ -9,8 +9,6 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import javaslang.collection.List;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -26,14 +24,14 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
-public class FinalActionSupport {
+public class ActionSupport {
 
-    public static class FinalActionReturnValueHandler implements AsyncHandlerMethodReturnValueHandler {
+    public static class ActionReturnValueHandler implements AsyncHandlerMethodReturnValueHandler {
 
         private final ActorMaterializer materializer;
         private final ExecutorService ec;
 
-        public FinalActionReturnValueHandler(ExecutorService ec, ActorMaterializer materializer) {
+        public ActionReturnValueHandler(ExecutorService ec, ActorMaterializer materializer) {
             this.materializer = materializer;
             this.ec = ec;
         }
@@ -45,7 +43,7 @@ public class FinalActionSupport {
 
         @Override
         public boolean supportsReturnType(MethodParameter returnType) {
-            return FinalAction.class.isAssignableFrom(returnType.getParameterType());
+            return Action.class.isAssignableFrom(returnType.getParameterType());
         }
 
         @SuppressWarnings("unchecked")
@@ -55,22 +53,20 @@ public class FinalActionSupport {
                 mavContainer.setRequestHandled(true);
                 return;
             }
-            final FinalAction finalAction = FinalAction.class.cast(returnValue);
+            final Action action = Action.class.cast(returnValue);
             final HttpServletResponse response = (HttpServletResponse) webRequest.getNativeResponse();
             WebAsyncUtils.getAsyncManager(webRequest)
                     .startDeferredResultProcessing(
-                            new FinalActionDeferredResult(finalAction, ec, response, materializer), mavContainer);
+                            new ActionDeferredResult(action, ec, response, materializer), mavContainer);
         }
     }
 
-    public static class FinalActionDeferredResult extends DeferredResult<ResponseBodyEmitter> {
+    public static class ActionDeferredResult extends DeferredResult<ResponseBodyEmitter> {
 
-        private static final Logger logger = LoggerFactory.getLogger(FinalActionDeferredResult.class);
-
-        public FinalActionDeferredResult(FinalAction finalAction, ExecutorService ec, HttpServletResponse response, ActorMaterializer materializer) {
+        public ActionDeferredResult(Action action, ExecutorService ec, HttpServletResponse response, ActorMaterializer materializer) {
             super(null, new Object());
-            Assert.notNull(finalAction, "FinalAction cannot be null");
-            finalAction.run(ec).andThen(ttry -> {
+            Assert.notNull(action, "Action cannot be null");
+            action.run(ec).andThen(ttry -> {
                 for (Result result : ttry.asSuccess()) {
                     for (Map.Entry<String, List<String>> entry : result.headers.toJavaMap().entrySet()) {
                         for (String value : entry.getValue()) {

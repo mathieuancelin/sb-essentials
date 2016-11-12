@@ -5,18 +5,13 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import javaslang.collection.HashMap;
-import javaslang.collection.List;
-import javaslang.collection.Map;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
 import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class RequestContext {
 
@@ -28,19 +23,14 @@ public class RequestContext {
 
     private final HttpServletResponse response;
 
-    private final Map<String, List<String>> headers;
+    private final RequestHeaders headers;
 
     public RequestContext(HashMap<String, Object> state, WebApplicationContext applicationContext, HttpServletRequest request, HttpServletResponse response) {
         this.state = state;
         this.applicationContext = applicationContext;
         this.request = request;
         this.response = response;
-        Map<String, List<String>> _headers = HashMap.empty();
-        ArrayList<String> headerNames = Collections.list(request.getHeaderNames());
-        for (String name : headerNames) {
-            _headers = _headers.put(name, List.ofAll(Collections.list(request.getHeaders(name))));
-        }
-        this.headers = _headers;
+        this.headers = new RequestHeaders(request);
     }
 
     public <T> T getBean(Class<T> clazz) {
@@ -76,14 +66,13 @@ public class RequestContext {
     }
 
     public Future<RequestBody> body() {
-        ActorMaterializer materializer = Actions.materializer();
-        // ActorMaterializer materializer = ActorMaterializer.create(Actions.webApplicationContext.getBean(ActorSystem.class));
+        ActorMaterializer materializer = ActionsHelperInternal.materializer();
         return Future.fromJdkCompletableFuture(
             bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
         ).map(RequestBody::new);
     }
 
-    public <T> Future<T> body(BiFunction<Map<String, List<String>>, Source<ByteString, ?>, Future<T>> bodyParser) {
+    public <T> Future<T> body(BiFunction<RequestHeaders, Source<ByteString, ?>, Future<T>> bodyParser) {
         return bodyParser.apply(headers, bodyAsStream());
     }
 
@@ -95,7 +84,7 @@ public class RequestContext {
         return Option.apply(request.getHeader(name));
     }
 
-    public Map<String, List<String>> headers() {
+    public RequestHeaders headers() {
         return headers;
     }
 }

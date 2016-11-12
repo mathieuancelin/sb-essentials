@@ -7,8 +7,6 @@ import akka.util.ByteString;
 import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
-import com.github.jknack.handlebars.io.TemplateLoader;
 import com.google.common.io.Files;
 import javaslang.collection.HashMap;
 import javaslang.collection.HashSet;
