@@ -9,9 +9,11 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
+import org.reactivecouchbase.sbessentials.config.Configuration;
 import org.reactivestreams.Publisher;
 import org.springframework.web.context.WebApplicationContext;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.concurrent.ExecutorService;
@@ -27,9 +29,15 @@ public class RequestContext {
 
     private final HttpServletResponse response;
 
+    private final ExecutorService ec;
+
     private final RequestHeaders headers;
 
-    private final ExecutorService ec;
+    private final RequestQueryParams queryParams;
+
+    private final RequestCookies cookies;
+
+    private final Configuration configuration;
 
     public RequestContext(HashMap<String, Object> state, WebApplicationContext applicationContext, HttpServletRequest request, HttpServletResponse response, ExecutorService ec) {
         this.state = state;
@@ -37,7 +45,10 @@ public class RequestContext {
         this.request = request;
         this.response = response;
         this.headers = new RequestHeaders(request);
+        this.queryParams = new RequestQueryParams(request);
+        this.cookies = new RequestCookies(request);
         this.ec = ec;
+        this.configuration = applicationContext.getBean(Configuration.class);
     }
 
     public ExecutorService currentExecutor() {
@@ -77,7 +88,7 @@ public class RequestContext {
     }
 
     public Future<RequestBody> body() {
-        return body(ActionsHelperInternal.executionContext());
+        return body(ActionsHelperInternal.executor());
     }
 
     public Future<RequestBody> body(ExecutorService ec) {
@@ -110,5 +121,21 @@ public class RequestContext {
 
     public RequestHeaders headers() {
         return headers;
+    }
+
+    public RequestQueryParams queryParams() {
+        return queryParams;
+    }
+
+    public Option<String> queryParam(String name) {
+        return queryParams.param(name);
+    }
+
+    public RequestCookies cookies() {
+        return cookies;
+    }
+
+    public Option<Cookie> cookie(String name) {
+        return cookies.cookie(name);
     }
 }

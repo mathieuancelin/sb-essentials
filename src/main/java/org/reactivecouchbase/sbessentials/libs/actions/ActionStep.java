@@ -33,11 +33,11 @@ public interface ActionStep {
                 ActionsHelperInternal.logger.error("Sync action error", e);
                 return ActionsHelperInternal.transformError(e, req);
             }
-        }, ActionsHelperInternal.executionContext()));
+        }, ActionsHelperInternal.executor()));
     }
 
     default Action async(Function<RequestContext, Future<Result>> block) {
-        return async(ActionsHelperInternal.executionContext(), block);
+        return async(ActionsHelperInternal.executor(), block);
     }
 
     default Action async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {

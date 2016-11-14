@@ -26,8 +26,8 @@ public class ActionsHelperInternal {
         ActionsHelperInternal.webApplicationContext = webApplicationContext;
     }
 
-    static ExecutorService executionContext() {
-        return webApplicationContext.getBean(ExecutorService.class);
+    static ExecutorService executor() {
+        return webApplicationContext.getBean("blocking-executor-service", ExecutorService.class);
     }
 
     static ActorMaterializer materializer() {

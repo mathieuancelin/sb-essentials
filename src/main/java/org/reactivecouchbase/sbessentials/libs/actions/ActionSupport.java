@@ -113,11 +113,11 @@ public class ActionSupport {
                     headers.add(entry.getKey(), value);
                 }
             }
-            // result.cookies.forEach(response::addCookie);
             response.setStatusCode(HttpStatus.valueOf(result.status));
             headers.setContentType(MediaType.valueOf(result.contentType));
             headers.add("X-Content-Type", result.contentType);
             headers.add("Content-Type", result.contentType);
+            // it seems to appear in double
             headers.add("Transfer-Encoding", "chunked");
         }
     }

@@ -20,7 +20,7 @@ import org.reactivecouchbase.functional.Tuple;
 import org.reactivecouchbase.json.JsObject;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
-import org.reactivecouchbase.sbessentials.config.Config;
+import org.reactivecouchbase.sbessentials.config.SBEssentialsConfig;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
@@ -55,7 +55,7 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ContextConfiguration(classes = { BasicResultsTest.Application.class, Config.class, BasicResultsTest.TestController.class })
+@ContextConfiguration(classes = { BasicResultsTest.Application.class, SBEssentialsConfig.class, BasicResultsTest.TestController.class })
 public class BasicResultsTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicResultsTest.class);
@@ -117,6 +117,7 @@ public class BasicResultsTest {
 
     @Test
     public void testJsonResult() throws Exception {
+        // Thread.sleep(Duration.of("10min").toMillis());
         Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/json")
             .withHeader("Api-Key", "12345")
@@ -278,19 +279,19 @@ public class BasicResultsTest {
 
         @Autowired ActorSystem actorSystem;
 
-        private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").fold(
-                () -> {
-                    logger.info("No API KEY provided");
-                    return Future.successful(BadRequest.json(Json.obj().with("error", "No API KEY provided")));
-                },
-                (value) -> {
-                    if (value.equalsIgnoreCase("12345")) {
-                        return block.apply(req);
-                    } else {
-                        logger.info("Bad API KEY provided {}", value);
-                        return Future.successful(BadRequest.json(Json.obj().with("error", "Bad API KEY")));
-                    }
+        private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").orElse(req.queryParam("Api-Key")).fold(
+            () -> {
+                logger.info("No API KEY provided");
+                return Future.successful(BadRequest.json(Json.obj().with("error", "No API KEY provided")));
+            },
+            (value) -> {
+                if (value.equalsIgnoreCase("12345")) {
+                    return block.apply(req);
+                } else {
+                    logger.info("Bad API KEY provided {}", value);
+                    return Future.successful(BadRequest.json(Json.obj().with("error", "Bad API KEY")));
                 }
+            }
         );
 
         private static ActionStep LogBefore = (req, block) -> {

@@ -80,7 +80,7 @@ public class WSRequest {
         this.followsRedirect = Option.none();
         this.virtualHost = Option.none();
         this.contentType = ContentTypes.TEXT_PLAIN_UTF8;
-        this.materializer = WS.webApplicationContext.getBean("ws-client-actor-materializer", ActorMaterializer.class);
+        this.materializer = WS.materializer();
 
     }
 
