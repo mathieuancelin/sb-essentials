@@ -44,7 +44,7 @@ public class ActorFlow {
         return Flow.fromSinkAndSource(
             Sink.actorRef(
                 factory.actorOf(Props.create(creator)),
-                Status.Success.apply(new Object())
+                new Status.Success(new Object())
             ),
             Source.fromPublisher(pair.second())
         );

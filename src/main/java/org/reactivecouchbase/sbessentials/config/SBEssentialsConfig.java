@@ -10,6 +10,7 @@ import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.web.context.request.async.TimeoutCallableProcessingInterceptor;
@@ -72,7 +73,7 @@ public class SBEssentialsConfig {
         return configuration;
     }
 
-    @Bean
+    @Bean @Primary
     public ActorSystem actorSystem() {
         return system;
     }
@@ -92,7 +93,7 @@ public class SBEssentialsConfig {
         return websocketSystem;
     }
 
-    @Bean
+    @Bean @Primary
     public ActorMaterializer actorMaterializer() {
         return generalPurposeMaterializer;
     }
@@ -112,7 +113,7 @@ public class SBEssentialsConfig {
         return websocketActorMaterializer;
     }
 
-    @Bean
+    @Bean @Primary
     public Executor globalExecutor() {
         return system.dispatcher();
     }
@@ -132,7 +133,7 @@ public class SBEssentialsConfig {
         return websocketSystem.dispatcher();
     }
 
-    @Bean
+    @Bean @Primary
     public ExecutorService globalExecutorService() {
         return globalExecutor;
     }
