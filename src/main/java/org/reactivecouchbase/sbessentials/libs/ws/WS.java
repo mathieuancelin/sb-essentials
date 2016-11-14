@@ -37,7 +37,7 @@ public class WS {
     }
 
     static ActorSystem actorSystem() {
-        return webApplicationContext.getBean(ActorSystem.class);
+        return webApplicationContext.getBean("ws-actor-system", ActorSystem.class);
     }
 
     public static Future<WSResponse> call(String host, HttpRequest request) {

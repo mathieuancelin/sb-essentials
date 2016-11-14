@@ -12,7 +12,7 @@ public class RequestCookies {
 
     private final Map<String, Cookie> cookies;
 
-    public RequestCookies(HttpServletRequest request) {
+    RequestCookies(HttpServletRequest request) {
         this.cookies = Option.apply(request.getCookies()).map(cookies -> {
             Map<String, Cookie> _cookies = HashMap.empty();
             for (Cookie cookie : cookies) {

@@ -10,7 +10,6 @@ import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.web.context.request.async.TimeoutCallableProcessingInterceptor;
@@ -24,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 
-@Configuration
+@org.springframework.context.annotation.Configuration
 public class SBEssentialsConfig {
 
     private final Config config = ConfigFactory.load();
@@ -46,11 +45,17 @@ public class SBEssentialsConfig {
     private final ActorMaterializer blockingActorMaterializer = ActorMaterializer.create(blockingSystem);
     private final FakeExecutorService blockingExecutor = new FakeExecutorService(blockingSystem.dispatcher());
 
+    private final ActorSystem websocketSystem = ActorSystem.create("websocket-system",
+            config.atPath("systems.websocket").withFallback(ConfigFactory.empty()));
+    private final ActorMaterializer websocketActorMaterializer = ActorMaterializer.create(websocketSystem);
+    private final FakeExecutorService websocketExecutor = new FakeExecutorService(websocketSystem.dispatcher());
+
     {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             system.shutdown();
             wsSystem.shutdown();
             blockingSystem.shutdown();
+            websocketSystem.shutdown();
         }));
     }
 
@@ -72,6 +77,21 @@ public class SBEssentialsConfig {
         return system;
     }
 
+    @Bean(name = "blocking-actor-system")
+    public ActorSystem blockingSystem() {
+        return blockingSystem;
+    }
+
+    @Bean(name = "ws-actor-system")
+    public ActorSystem wsSystem() {
+        return wsSystem;
+    }
+
+    @Bean(name = "websocket-actor-system")
+    public ActorSystem websocketSystem() {
+        return websocketSystem;
+    }
+
     @Bean
     public ActorMaterializer actorMaterializer() {
         return generalPurposeMaterializer;
@@ -85,6 +105,11 @@ public class SBEssentialsConfig {
     @Bean(name = "ws-client-actor-materializer")
     public ActorMaterializer wsClientActorMaterializer() {
         return wsClientActorMaterializer;
+    }
+
+    @Bean(name = "websocket-actor-materializer")
+    public ActorMaterializer websocketActorMaterializer() {
+        return websocketActorMaterializer;
     }
 
     @Bean
@@ -102,6 +127,11 @@ public class SBEssentialsConfig {
         return wsSystem.dispatcher();
     }
 
+    @Bean(name = "websocket-executor")
+    public Executor websocketExecutor() {
+        return websocketSystem.dispatcher();
+    }
+
     @Bean
     public ExecutorService globalExecutorService() {
         return globalExecutor;
@@ -115,6 +145,11 @@ public class SBEssentialsConfig {
     @Bean(name = "ws-executor-service")
     public ExecutorService wsExecutorService() {
         return wsExecutor;
+    }
+
+    @Bean(name = "websocket-executor-service")
+    public ExecutorService websocketExecutorService() {
+        return websocketExecutor;
     }
 
     @Bean

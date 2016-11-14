@@ -9,7 +9,7 @@ public class RequestQueryParams {
 
     private final Map<String, List<String>> queryParams;
 
-    public RequestQueryParams(HttpServletRequest request) {
+    RequestQueryParams(HttpServletRequest request) {
         this.queryParams = Option.apply(request.getQueryString()).map(s -> s.replace("?", "")).map(s -> List.of(s.split("\\&"))).map(params -> {
             Map<String, List<String>> queryParams = HashMap.empty();
             for (String param : params) {

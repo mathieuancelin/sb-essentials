@@ -4,6 +4,8 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.http.javadsl.model.HttpMethods;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
@@ -26,6 +28,8 @@ import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
+import org.reactivecouchbase.sbessentials.libs.websocket.WebSocket;
+import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketMapping;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
 import org.slf4j.Logger;
@@ -42,6 +46,7 @@ import org.springframework.web.context.WebApplicationContext;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -93,6 +98,21 @@ public class BasicResultsTest {
             ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("Hello World!\n", body._1);
+        Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+    }
+
+    @Test
+    public void testPathParamResult() throws Exception {
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/hello/Mathieu").call()
+                .flatMap(r -> r.body().map(b ->
+                        Tuple.of(
+                                b.body(),
+                                r.headers()
+                        )
+                ));
+        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Assert.assertEquals("Hello Mathieu!\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
@@ -369,6 +389,13 @@ public class BasicResultsTest {
             );
         }
 
+        @GetMapping("/hello/{name}")
+        public Action hello() {
+            return Action.sync(ctx ->
+                    Ok.text("Hello " + ctx.pathParam("name").getOrElse("World") + "!\n")
+            );
+        }
+
         @GetMapping("/huge")
         public Action hugeText() {
             return ApiManagedAction.sync(ctx ->
@@ -452,6 +479,16 @@ public class BasicResultsTest {
                     .call()
                     .flatMap(r -> r.body())
                     .map(r -> Ok.binary(r.bytes()))
+            );
+        }
+
+        @WebSocketMapping(path = "/websocket/{id}")
+        public WebSocket webSocket() {
+            return WebSocket.accept(context ->
+                Flow.fromSinkAndSource(
+                    Sink.foreach(msg -> logger.info(msg)),
+                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), "msg" + context.pathVariable("id"))
+                )
             );
         }
 

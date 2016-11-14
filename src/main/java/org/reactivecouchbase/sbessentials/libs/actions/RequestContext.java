@@ -37,6 +37,8 @@ public class RequestContext {
 
     private final RequestCookies cookies;
 
+    private final RequestPathParams pathParams;
+
     private final Configuration configuration;
 
     public RequestContext(HashMap<String, Object> state, WebApplicationContext applicationContext, HttpServletRequest request, HttpServletResponse response, ExecutorService ec) {
@@ -47,6 +49,7 @@ public class RequestContext {
         this.headers = new RequestHeaders(request);
         this.queryParams = new RequestQueryParams(request);
         this.cookies = new RequestCookies(request);
+        this.pathParams = new RequestPathParams(request);
         this.ec = ec;
         this.configuration = applicationContext.getBean(Configuration.class);
     }
@@ -137,6 +140,14 @@ public class RequestContext {
 
     public Option<Cookie> cookie(String name) {
         return cookies.cookie(name);
+    }
+
+    public RequestPathParams pathParams() {
+        return pathParams;
+    }
+
+    public Option<String> pathParam(String name) {
+        return pathParams.param(name);
     }
 
     public Configuration configuration() {

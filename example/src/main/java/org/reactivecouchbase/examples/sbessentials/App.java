@@ -1,5 +1,9 @@
 package org.reactivecouchbase.examples.sbessentials;
 
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.*;
@@ -11,11 +15,14 @@ import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
+import org.reactivecouchbase.sbessentials.libs.websocket.WebSocket;
+import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketMapping;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
+import scala.concurrent.duration.FiniteDuration;
 
 @ComponentScan
 @SpringBootApplication
@@ -58,6 +65,16 @@ public class App {
             // Use composed action
             return LoggedAction.sync(ctx ->
                 Ok.text("Hello World!\n")
+            );
+        }
+
+        @WebSocketMapping(path = "/websocket/{id}")
+        public WebSocket webSocket() {
+            return WebSocket.accept(context ->
+                Flow.fromSinkAndSource(
+                    Sink.foreach(msg -> logger.info(msg)),
+                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), "msg" + context.pathVariable("id"))
+                )
             );
         }
     }
