@@ -94,7 +94,7 @@ public class BasicResultsTest {
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("Hello World!\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -112,7 +112,7 @@ public class BasicResultsTest {
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(TestController.VERY_HUGE_TEXT + "\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -131,7 +131,7 @@ public class BasicResultsTest {
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(Json.obj().with("message", "Hello World!"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -155,7 +155,7 @@ public class BasicResultsTest {
         Assert.assertTrue(jsonBody.exists("city"));
         Assert.assertTrue(jsonBody.exists("country_name"));
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class BasicResultsTest {
         Assert.assertTrue(jsonBody.exists("city"));
         Assert.assertTrue(jsonBody.exists("country_name"));
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -199,7 +199,7 @@ public class BasicResultsTest {
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals(Json.obj().with("uuid", uuid).with("processed_by", "SB"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -217,7 +217,7 @@ public class BasicResultsTest {
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("<h1>Hello World!</h1>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -235,7 +235,7 @@ public class BasicResultsTest {
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("<div><h1>Hello Mathieu!</h1></div>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class BasicResultsTest {
         }
         Assert.assertTrue(parts.size() < 7);
         Assert.assertEquals("text/event-stream", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
-        Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

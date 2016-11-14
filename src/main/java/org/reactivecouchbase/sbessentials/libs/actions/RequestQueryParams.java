@@ -29,6 +29,10 @@ public class RequestQueryParams {
         return queryParams;
     }
 
+    public Map<String, String> simpleParams() {
+        return queryParams.bimap(k -> k, Traversable::head);
+    }
+
     public Set<String> paramsNames() {
         return queryParams.keySet();
     }

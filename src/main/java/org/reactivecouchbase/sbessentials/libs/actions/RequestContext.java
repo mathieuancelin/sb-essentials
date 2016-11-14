@@ -138,4 +138,8 @@ public class RequestContext {
     public Option<Cookie> cookie(String name) {
         return cookies.cookie(name);
     }
+
+    public Configuration configuration() {
+        return configuration;
+    }
 }

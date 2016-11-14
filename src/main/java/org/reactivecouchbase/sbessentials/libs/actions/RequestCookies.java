@@ -1,6 +1,8 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
-import javaslang.collection.*;
+import javaslang.collection.HashMap;
+import javaslang.collection.Map;
+import javaslang.collection.Set;
 import org.reactivecouchbase.functional.Option;
 
 import javax.servlet.http.Cookie;
@@ -11,15 +13,13 @@ public class RequestCookies {
     private final Map<String, Cookie> cookies;
 
     public RequestCookies(HttpServletRequest request) {
-        if (request.getCookies() != null) {
+        this.cookies = Option.apply(request.getCookies()).map(cookies -> {
             Map<String, Cookie> _cookies = HashMap.empty();
-            for (Cookie cookie : request.getCookies()) {
+            for (Cookie cookie : cookies) {
                 _cookies = _cookies.put(cookie.getName(), cookie);
             }
-            cookies = _cookies;
-        } else {
-            cookies = HashMap.empty();
-        }
+            return _cookies;
+        }).getOrElse(HashMap.empty());
     }
 
     public Map<String, Cookie> raw() {

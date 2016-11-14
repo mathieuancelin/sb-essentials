@@ -118,7 +118,7 @@ public class ActionSupport {
             headers.add("X-Content-Type", result.contentType);
             headers.add("Content-Type", result.contentType);
             // it seems to appear in double
-            headers.add("Transfer-Encoding", "chunked");
+            headers.add("X-Transfer-Encoding", "chunked");
         }
     }
 }
