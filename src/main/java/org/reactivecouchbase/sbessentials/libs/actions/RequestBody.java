@@ -52,6 +52,23 @@ public class RequestBody {
         }
     }
 
+    public Try<Node> asSafeXml() {
+        try {
+            return Try.success(DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                    .parse(new InputSource(new StringReader(asString()))));
+        } catch (Exception e) {
+            return Try.failure(e);
+        }
+    }
+
+    public Try<Map<String, List<String>>> asSafeURLForm() {
+        try {
+            return Try.success(asURLForm());
+        } catch (Exception e) {
+            return Try.failure(e);
+        }
+    }
+
     public Map<String, List<String>> asURLForm() {
         Map<String, List<String>> form = HashMap.empty();
         String body = asString();
