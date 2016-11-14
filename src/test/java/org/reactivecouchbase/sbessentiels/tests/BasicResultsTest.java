@@ -128,6 +128,7 @@ public class BasicResultsTest {
                 )
             ));
         Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        System.out.println(body._2.toString());
         Assert.assertEquals(Json.obj().with("message", "Hello World!"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
