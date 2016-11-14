@@ -1,6 +1,5 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
-import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpResponse;
 import akka.stream.ActorMaterializer;

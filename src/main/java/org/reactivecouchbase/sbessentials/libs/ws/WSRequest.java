@@ -128,17 +128,14 @@ public class WSRequest {
 
     public WSRequest withPath(String path) {
         return copy().withPath(path).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest addPathSegment(String path) {
         return copy().withPath(this.path + "/" + path).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, this.path + "/" + path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withMethod(HttpMethod method) {
         return copy().withMethod(method).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(Publisher<ByteString> body) {
@@ -147,7 +144,6 @@ public class WSRequest {
 
     public WSRequest withBody(Source<ByteString, ?> body) {
         return copy().withBody(body).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(Publisher<ByteString> body, ContentType ctype) {
@@ -156,66 +152,55 @@ public class WSRequest {
 
     public WSRequest withBody(Source<ByteString, ?> body, ContentType ctype) {
         return copy().withBody(body).withContentType(ctype).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, ctype, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(JsValue body) {
         Source<ByteString, ?> source = Source.single(ByteString.fromString(body.stringify()));
         return copy().withBody(source).withContentType(ContentTypes.APPLICATION_JSON).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ContentTypes.APPLICATION_JSON, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(String body) {
         Source<ByteString, ?> source = Source.single(ByteString.fromString(body));
         return copy().withBody(source).withContentType(ContentTypes.TEXT_PLAIN_UTF8).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ContentTypes.TEXT_PLAIN_UTF8, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(String body, ContentType ctype) {
         Source<ByteString, ?> source = Source.single(ByteString.fromString(body));
         return copy().withBody(source).withContentType(ctype).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ctype, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(ByteString body) {
         Source<ByteString, ?> source = Source.single(body);
         return copy().withBody(source).withContentType(ContentTypes.TEXT_PLAIN_UTF8).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ContentTypes.TEXT_PLAIN_UTF8, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(ByteString body, ContentType ctype) {
         Source<ByteString, ?> source = Source.single(body);
         return copy().withBody(source).withContentType(ctype).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ctype, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(byte[] body) {
         Source<ByteString, ?> source = Source.single(ByteString.fromArray(body));
         return copy().withBody(source).withContentType(ContentTypes.TEXT_PLAIN_UTF8).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ContentTypes.TEXT_PLAIN_UTF8, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(byte[] body, ContentType ctype) {
         Source<ByteString, ?> source = Source.single(ByteString.fromArray(body));
         return copy().withBody(source).withContentType(ctype).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ctype, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(InputStream body) {
         Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> body);
         return copy().withBody(source).withContentType(ContentTypes.APPLICATION_OCTET_STREAM).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ContentTypes.APPLICATION_OCTET_STREAM, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withBody(InputStream body, ContentType ctype) {
         Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> body);
         return copy().withBody(source).withContentType(ctype).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, source, ctype, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withHeaders(Map<String, List<String>> headers) {
         return copy().withHeaders(headers).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withHeader(String name, String value) {
@@ -231,7 +216,6 @@ public class WSRequest {
 
     public WSRequest withQueryParams(Map<String, List<String>> queryString) {
         return copy().withQueryParams(queryString).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryString, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withQueryParam(String name, String value) {
@@ -242,7 +226,6 @@ public class WSRequest {
             _queryString = _queryString.put(name, _queryString.get(name).get().append(value));
         }
         return copy().withQueryParams(_queryString).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, _queryString, requestTimeout, followsRedirect, virtualHost);
     }
 
     // public WSRequest withRequestTimeout(Option<Duration> requestTimeout) {

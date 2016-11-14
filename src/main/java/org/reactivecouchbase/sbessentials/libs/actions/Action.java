@@ -6,7 +6,6 @@ import org.reactivecouchbase.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-// TODO : WS builder and use copy ?
 // TODO : cookies from request context
 // TODO : query params from request context
 // TODO : configuration from typesafe config
