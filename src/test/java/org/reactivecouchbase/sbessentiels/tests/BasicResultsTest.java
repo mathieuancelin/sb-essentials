@@ -1,9 +1,11 @@
 package org.reactivecouchbase.sbessentiels.tests;
 
 import akka.Done;
-import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
+import akka.actor.*;
 import akka.http.javadsl.model.HttpMethods;
+import akka.japi.Creator;
+import akka.stream.ActorMaterializer;
+import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -28,7 +30,9 @@ import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
+import org.reactivecouchbase.sbessentials.libs.websocket.ActorFlow;
 import org.reactivecouchbase.sbessentials.libs.websocket.WebSocket;
+import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketContext;
 import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketMapping;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
@@ -298,6 +302,7 @@ public class BasicResultsTest {
         private final static Logger logger = LoggerFactory.getLogger(TestController.class);
 
         @Autowired ActorSystem actorSystem;
+        @Autowired ActorMaterializer materializer;
 
         private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").orElse(req.queryParam("Api-Key")).fold(
             () -> {
@@ -485,9 +490,12 @@ public class BasicResultsTest {
         @WebSocketMapping(path = "/websocket/{id}")
         public WebSocket webSocket() {
             return WebSocket.accept(context ->
-                Flow.fromSinkAndSource(
-                    Sink.foreach(msg -> logger.info(msg)),
-                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), "msg" + context.pathVariable("id"))
+                ActorFlow.actorRef(
+                    out -> MyWebSocketActor.props(context, out),
+                    1000,
+                    OverflowStrategy.backpressure(),
+                    actorSystem,
+                    materializer
                 )
             );
         }
@@ -499,5 +507,33 @@ public class BasicResultsTest {
                 "Vestibulum vel diam nec felis sodales porta nec sit amet eros. Quisque sit amet molestie risus. Pellentesque turpis ante, aliquam at urna vel, pulvinar fermentum massa. Proin posuere eu erat id condimentum. Nulla imperdiet erat a varius laoreet. Curabitur sollicitudin urna non commodo condimentum. Ut id ligula in ligula maximus pulvinar et id eros. Fusce et consequat orci. Maecenas leo sem, tristique quis justo nec, accumsan interdum quam. Nunc imperdiet scelerisque iaculis. Praesent sollicitudin purus et purus porttitor volutpat. Duis tincidunt, ipsum vel dignissim imperdiet, ligula nisi ultrices velit, at sodales felis urna at mi. Donec arcu ligula, pulvinar non posuere vel, accumsan eget lorem. Vivamus ac iaculis enim, ut rutrum felis. Praesent non ultrices nibh. Proin tristique, nibh id viverra varius, orci nisi faucibus turpis, quis suscipit sem nisi eu purus.";
 
         private final static String VERY_HUGE_TEXT = IntStream.rangeClosed(1, 1000).mapToObj(a -> HUGE_TEXT).collect(Collectors.joining("\n"));
+    }
+
+    private static class MyWebSocketActor extends UntypedActor {
+
+        private final ActorRef out;
+        private final WebSocketContext ctx;
+
+        public MyWebSocketActor(WebSocketContext ctx, ActorRef out) {
+            this.out = out;
+            this.ctx = ctx;
+        }
+
+        public static Props props(WebSocketContext ctx, ActorRef out) {
+            return Props.create((Creator<Actor>) () -> new MyWebSocketActor(ctx, out));
+        }
+
+        public void onReceive(Object message) throws Exception {
+            if (message instanceof String) {
+                JsValue value = Json.parse((String) message);
+                JsValue response = Json.obj()
+                        .with("sent_at", System.currentTimeMillis())
+                        .with("resource", ctx.pathParam("id").getOrElse("No value !!!"))
+                        .with("sourceMessage", value);
+                out.tell(response.stringify(), getSelf());
+            } else {
+                unhandled(message);
+            }
+        }
     }
 }
