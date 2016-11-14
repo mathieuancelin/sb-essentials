@@ -23,9 +23,9 @@ public class Configuration {
         }
     }
 
-    private <T> List<T> readList(String path, Supplier<java.util.List> supplier) {
+    private <T> List<T> readList(String path, Supplier<java.util.List<T>> supplier) {
         try {
-            return Option.some(supplier.get()).map(l -> List.ofAll(l)).getOrElse(List.empty());
+            return Option.some(supplier.get()).map(List::ofAll).getOrElse(List.empty());
         } catch (Exception e) {
             return List.empty();
         }
