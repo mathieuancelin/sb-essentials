@@ -17,9 +17,11 @@ import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
 import org.reactivecouchbase.json.JsValue;
+import org.reactivestreams.Publisher;
 
 import java.io.InputStream;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 
 public class WSRequest {
 
@@ -94,8 +96,16 @@ public class WSRequest {
         return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
+    public WSRequest withBody(Publisher<ByteString> body) {
+        return withBody(Source.fromPublisher(body));
+    }
+
     public WSRequest withBody(Source<ByteString, ?> body) {
         return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
+    }
+
+    public WSRequest withBody(Publisher<ByteString> body, ContentType ctype) {
+        return withBody(Source.fromPublisher(body), ctype);
     }
 
     public WSRequest withBody(Source<ByteString, ?> body, ContentType ctype) {
@@ -189,6 +199,10 @@ public class WSRequest {
     // TODO : handle followsRedirect
     // TODO : handle virtualHost
     public Future<WSResponse> call() {
+        return call(WS.executor());
+    }
+
+    public Future<WSResponse> call(ExecutorService ec) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
         HttpRequest request = HttpRequest.create(path + (queryParams.isEmpty() ? "" : "?" + _queryString))
@@ -196,6 +210,6 @@ public class WSRequest {
             .withEntity(HttpEntities.createChunked(contentType, body))
             .addHeaders(_headers);
         CompletionStage<HttpResponse> responseFuture = Source.single(request).via(connectionFlow).runWith(Sink.head(), materializer);
-        return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new);
+        return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new, ec);
     }
 }

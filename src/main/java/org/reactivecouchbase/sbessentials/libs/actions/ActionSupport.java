@@ -29,11 +29,9 @@ public class ActionSupport {
     public static class ActionReturnValueHandler implements AsyncHandlerMethodReturnValueHandler {
 
         private final ActorMaterializer materializer;
-        private final ExecutorService ec;
 
-        public ActionReturnValueHandler(ExecutorService ec, ActorMaterializer materializer) {
+        public ActionReturnValueHandler(ActorMaterializer materializer) {
             this.materializer = materializer;
-            this.ec = ec;
         }
 
         @Override
@@ -57,16 +55,16 @@ public class ActionSupport {
             final HttpServletResponse response = (HttpServletResponse) webRequest.getNativeResponse();
             WebAsyncUtils.getAsyncManager(webRequest)
                     .startDeferredResultProcessing(
-                            new ActionDeferredResult(action, ec, response, materializer), mavContainer);
+                            new ActionDeferredResult(action, response, materializer), mavContainer);
         }
     }
 
-    public static class ActionDeferredResult extends DeferredResult<ResponseBodyEmitter> {
+    static class ActionDeferredResult extends DeferredResult<ResponseBodyEmitter> {
 
-        public ActionDeferredResult(Action action, ExecutorService ec, HttpServletResponse response, ActorMaterializer materializer) {
+        public ActionDeferredResult(Action action, HttpServletResponse response, ActorMaterializer materializer) {
             super(null, new Object());
             Assert.notNull(action, "Action cannot be null");
-            action.run(ec).andThen(ttry -> {
+            action.run().andThen(ttry -> {
                 for (Result result : ttry.asSuccess()) {
                     for (Map.Entry<String, List<String>> entry : result.headers.toJavaMap().entrySet()) {
                         for (String value : entry.getValue()) {
@@ -101,7 +99,7 @@ public class ActionSupport {
                 for (Throwable t : ttry.asFailure()) {
                     this.setErrorResult(t);
                 }
-            });
+            }, action.ec);
         }
     }
 }

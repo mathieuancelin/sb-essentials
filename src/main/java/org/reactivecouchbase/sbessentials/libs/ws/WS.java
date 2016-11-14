@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
 
 @Component
 public class WS {
@@ -26,7 +27,15 @@ public class WS {
         WS.webApplicationContext = webApplicationContext;
     }
 
+    static ExecutorService executor() {
+        return webApplicationContext.getBean(ExecutorService.class);
+    }
+
     public static Future<WSResponse> call(String host, HttpRequest request) {
+        return call(host, request, executor());
+    }
+
+    public static Future<WSResponse> call(String host, HttpRequest request, ExecutorService ec) {
         ActorSystem system = WS.webApplicationContext.getBean(ActorSystem.class);
         ActorMaterializer materializer = WS.webApplicationContext.getBean("ws-client-actor-materializer", ActorMaterializer.class);
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
@@ -35,7 +44,7 @@ public class WS {
                 Source.single(request)
                         .via(connectionFlow)
                         .runWith(Sink.<HttpResponse>head(), materializer);
-        return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new);
+        return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new, ec);
     }
 
     public static WSRequest host(String host) {

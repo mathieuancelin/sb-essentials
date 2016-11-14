@@ -17,6 +17,7 @@ import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.concurrent.Promise;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -133,6 +134,10 @@ public class Result {
         return Result.copy(this).withSource(source).build();
     }
 
+    public Result withBody(Publisher<ByteString> source) {
+        return Result.copy(this).withSource(Source.fromPublisher(source)).build();
+    }
+
     public Result text(String text) {
         Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
         return Result.copy(this)
@@ -206,6 +211,10 @@ public class Result {
                 .build();
     }
 
+    public Result binary(Publisher<ByteString> bytes) {
+        return binary(Source.fromPublisher(bytes));
+    }
+
     public Result binary(Source<ByteString, ?> bytes) {
         return Result.copy(this)
                 .withSource(bytes)
@@ -256,8 +265,16 @@ public class Result {
         }
     }
 
+    public Result chunked(Publisher<ByteString> theStream) {
+        return chunked(Source.fromPublisher(theStream));
+    }
+
     public Result chunked(Source<ByteString, ?> theStream) {
         return Result.copy(this).withSource(theStream).build();
+    }
+
+    public Result stream(Publisher<String> stream) {
+        return stream(Source.fromPublisher(stream));
     }
 
     public Result stream(Source<String, ?> stream) {
@@ -274,14 +291,14 @@ public class Result {
 
     public String toString() {
         return "Result { "
-                + status
-                + ", "
-                + contentType
-                + ", [ "
-                + headers.mkString(", ")
-                + " ], "
-                + source
-                + " }";
+            + status
+            + ", "
+            + contentType
+            + ", [ "
+            + headers.mkString(", ")
+            + " ], "
+            + source
+            + " }";
     }
 
     public static final class Builder {
@@ -301,6 +318,11 @@ public class Result {
 
         public Builder withSource(Source<ByteString, ?> val) {
             source = val;
+            return this;
+        }
+
+        public Builder withSource(Publisher<ByteString> val) {
+            source = Source.fromPublisher(val);
             return this;
         }
 

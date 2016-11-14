@@ -304,7 +304,7 @@ public class BasicResultsTest {
                     "[Log] after action -> {} : took {}",
                     req.getRequest().getRequestURI(),
                     Duration.of(System.currentTimeMillis() - req.getValue("start", Long.class), TimeUnit.MILLISECONDS).toHumanReadable()
-            );
+            , req.currentExecutor());
         });
 
         private static ActionStep Throttle(int limit, long perMillis) {
@@ -434,7 +434,8 @@ public class BasicResultsTest {
         public Action testBigDownload() {
             return Action.async(ctx ->
                 WS.host("http://releases.ubuntu.com")
-                    .withPath("/16.04.1/ubuntu-16.04.1-desktop-amd64.iso")
+                    .addPathSegment("16.04.1")
+                    .addPathSegment("ubuntu-16.04.1-desktop-amd64.iso")
                     .withHeader("From", "SB")
                     .call()
                     .map(r -> Ok.chunked(r.bodyAsStream()).as("application/octet-stream"))

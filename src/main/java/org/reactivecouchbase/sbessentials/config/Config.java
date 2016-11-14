@@ -112,7 +112,7 @@ public class Config {
 
             @Override
             public void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> returnValueHandlers) {
-                returnValueHandlers.add(new ActionSupport.ActionReturnValueHandler(globalExecutorService(), blockingActorMaterializer()));
+                returnValueHandlers.add(new ActionSupport.ActionReturnValueHandler(blockingActorMaterializer()));
             }
         };
     }

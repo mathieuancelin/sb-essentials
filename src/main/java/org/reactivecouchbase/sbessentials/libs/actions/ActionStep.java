@@ -9,6 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 public interface ActionStep {
@@ -36,17 +37,21 @@ public interface ActionStep {
     }
 
     default Action async(Function<RequestContext, Future<Result>> block) {
+        return async(ActionsHelperInternal.executionContext(), block);
+    }
+
+    default Action async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes) {
             ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
             HttpServletRequest request = servletRequestAttributes.getRequest();
             HttpServletResponse response = servletRequestAttributes.getResponse();
-            RequestContext rc = new RequestContext(HashMap.empty(), ActionsHelperInternal.webApplicationContext, request, response);
-            return new Action(this, rc, block);
+            RequestContext rc = new RequestContext(HashMap.empty(), ActionsHelperInternal.webApplicationContext, request, response, ec);
+            return new Action(this, rc, block, ec);
         } else {
             return new Action(this, null, rc ->
                 Future.successful(ActionsHelperInternal.transformError(new RuntimeException("RequestAttributes is not an instance of "), null))
-            );
+            , ec);
         }
     }
 
