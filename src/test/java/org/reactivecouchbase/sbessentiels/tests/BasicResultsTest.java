@@ -336,7 +336,7 @@ public class BasicResultsTest {
                 Result result = Ok.stream(
                     Source.tick(
                         FiniteDuration.apply(0, TimeUnit.MILLISECONDS),
-                        FiniteDuration.apply(1, TimeUnit.SECONDS),
+                        FiniteDuration.apply(100, TimeUnit.MILLISECONDS),
                         ""
                     )
                     .map(l -> Json.obj().with("time", System.currentTimeMillis()).with("value", l))
@@ -347,7 +347,7 @@ public class BasicResultsTest {
                 result.materializedValue(Cancellable.class).andThen(ttry -> {
                     for (Cancellable c : ttry.asSuccess()) {
                         after(
-                                FiniteDuration.create(5, TimeUnit.SECONDS),
+                                FiniteDuration.create(500, TimeUnit.MILLISECONDS),
                                 actorSystem.scheduler(),
                                 actorSystem.dispatcher(),
                                 CompletableFuture.completedFuture(Done.getInstance())
