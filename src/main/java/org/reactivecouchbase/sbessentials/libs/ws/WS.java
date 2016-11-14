@@ -1,11 +1,18 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.ws.Message;
+import akka.http.javadsl.model.ws.WebSocket;
+import akka.http.javadsl.model.ws.WebSocketRequest;
+import akka.http.javadsl.model.ws.WebSocketUpgradeResponse;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
@@ -61,5 +68,11 @@ public class WS {
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
                 Http.get(system).outgoingConnection(host);
         return new WSRequest(system, connectionFlow, host);
+    }
+
+    public static WebSocketClientRequest websocketHost(String host) {
+        ActorSystem system = WS.actorSystem();
+        ActorMaterializer materializer = WS.materializer();
+        return new WebSocketClientRequest(system, materializer, Http.get(system), host, "");
     }
 }

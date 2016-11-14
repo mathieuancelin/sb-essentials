@@ -26,9 +26,9 @@ repositories {
 
 dependencies {
     // Provided right ????
-    compile("org.springframework.boot:spring-boot-starter-web:1.4.1.RELEASE")
-    compile("org.springframework.boot:spring-boot-starter-actuator:1.4.1.RELEASE")
-    compile("org.springframework.boot:spring-boot-starter-websocket:1.4.1.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-web:1.4.2.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-actuator:1.4.2.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-websocket:1.4.2.RELEASE")
 
     compile("org.reactivecouchbase:common-lib:1.0-SNAPSHOT")
     compile("org.reactivecouchbase:client-lib:1.0-SNAPSHOT")
@@ -42,7 +42,7 @@ dependencies {
     compile("io.javaslang:javaslang:2.0.4")
     compile("com.github.jknack:handlebars:4.0.6")
 
-    testCompile("org.springframework.boot:spring-boot-starter-test:1.4.1.RELEASE")
+    testCompile("org.springframework.boot:spring-boot-starter-test:1.4.2.RELEASE")
     testCompile("junit:junit:4.12")
     testCompile("org.assertj:assertj-core:3.5.2")
 }

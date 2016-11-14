@@ -1,12 +1,16 @@
 package org.reactivecouchbase.sbessentiels.tests;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.*;
 import akka.http.javadsl.model.HttpMethods;
+import akka.http.javadsl.model.ws.Message;
+import akka.http.javadsl.model.ws.TextMessage;
 import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import javaslang.collection.HashMap;
@@ -20,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.Await;
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivecouchbase.concurrent.Promise;
 import org.reactivecouchbase.functional.Tuple;
 import org.reactivecouchbase.json.JsObject;
 import org.reactivecouchbase.json.JsValue;
@@ -53,6 +58,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -290,6 +296,36 @@ public class BasicResultsTest {
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
+
+    @Test
+    public void testWebsocketResult() throws Exception {
+        Promise<JsObject> promise = Promise.create();
+        final Sink<Message, CompletionStage<Done>> sink =
+                Sink.foreach(message -> {
+                    System.out.println("Got one here !!!");
+                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
+                });
+        final Source<Message, NotUsed> source =
+                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
+            sink,
+            source,
+            Keep.left()
+        );
+        WS.websocketHost("ws://localhost:7001")
+            .addPathSegment("tests")
+            .addPathSegment("websocket")
+            .addPathSegment("Mathieu")
+            .call(flow)
+            .connectionClosed
+            .andThen(t -> System.out.println("Closed ..."));
+        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        Assert.assertTrue(jsonBody.exists("sourceMessage"));
+        Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.field("sourceMessage").asObject());
+        Assert.assertTrue(jsonBody.exists("resource"));
+        Assert.assertEquals("Mathieu", jsonBody.field("resource").asString());
+        Assert.assertTrue(jsonBody.exists("sent_at"));
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -484,6 +520,24 @@ public class BasicResultsTest {
                     .call()
                     .flatMap(r -> r.body())
                     .map(r -> Ok.binary(r.bytes()))
+            );
+        }
+
+        @GetMapping("/wsui")
+        public Action testWebsocket() {
+            return Action.sync(ctx ->
+                Ok.html("<html><body><script>\n"
+                    + "window.ws = new WebSocket('ws://localhost:7001/tests/websocket/mat');\n"
+                    + "window.ws.onopen = function(e) { \n"
+                    + "  console.log('open', e);\n"
+                    + "  setTimeout(function() {\n"
+                    + "    window.ws.send(JSON.stringify({ 'yo': 'bitch' }));\n"
+                    + "  }, 100);\n"
+                    + "};\n"
+                    + "window.ws.onclose = function(e) { console.log('onclose', e) };\n"
+                    + "window.ws.onmessage = function(e) { console.log('message', e.data) };\n"
+                    + "\n"
+                    + "</script></body></html>")
             );
         }
 
