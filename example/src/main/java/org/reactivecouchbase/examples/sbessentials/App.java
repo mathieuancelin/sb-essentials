@@ -8,7 +8,7 @@ import org.springframework.context.annotation.*;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
-import org.reactivecouchbase.sbessentials.libs.actions.Actions;
+import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import static org.reactivecouchbase.sbessentials.libs.result.Results.*;
@@ -32,29 +32,29 @@ public class App {
         private static final Logger logger = LoggerFactory.getLogger(BaseController.class);
 
         // Action that logs before request
-        private static Action LogBefore = (req, block) -> {
+        private static ActionStep LogBefore = (req, block) -> {
             Long start = System.currentTimeMillis();
             logger.info("[Log] before action -> {}", req.getRequest().getRequestURI());
             return block.apply(req.setValue("start", start));
         };
 
         // Action that logs after request
-        private static Action LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
+        private static ActionStep LogAfter = (req, block) -> block.apply(req).andThen(ttry -> {
             logger.info(
-                    "[Log] after action -> {} : took {}",
-                    req.getRequest().getRequestURI(),
-                    Duration.of(
-                            System.currentTimeMillis() - req.getValue("start", Long.class),
-                            TimeUnit.MILLISECONDS
-                    ).toHumanReadable()
+                "[Log] after action -> {} : took {}",
+                req.getRequest().getRequestURI(),
+                Duration.of(
+                    System.currentTimeMillis() - req.getValue("start", Long.class),
+                    TimeUnit.MILLISECONDS
+                ).toHumanReadable()
             );
         });
 
         // Actions composition
-        private static Action LoggedAction = LogBefore.andThen(LogAfter);
+        private static ActionStep LoggedAction = LogBefore.andThen(LogAfter);
 
         @GetMapping("/hello")
-        public Future<Result> text() {
+        public Action text() {
             // Use composed action
             return LoggedAction.sync(ctx ->
                 Ok.text("Hello World!\n")
