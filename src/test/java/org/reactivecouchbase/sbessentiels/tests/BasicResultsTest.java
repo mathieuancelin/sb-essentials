@@ -52,14 +52,13 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
+import scala.concurrent.Promise$;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -73,9 +72,9 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 @ContextConfiguration(classes = { BasicResultsTest.Application.class, SBEssentialsConfig.class, BasicResultsTest.TestController.class })
 public class BasicResultsTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(BasicResultsTest.class);
     private static final Duration MAX_AWAIT = Duration.parse("4s");
     @Autowired public WebApplicationContext ctx;
+    @Autowired public ActorSystem actorSystem;
 
     @Before
     public void injectStaticStuff() {
@@ -300,13 +299,10 @@ public class BasicResultsTest {
     @Test
     public void testWebsocketResult() throws Exception {
         Promise<JsObject> promise = Promise.create();
-        final Sink<Message, CompletionStage<Done>> sink =
-                Sink.foreach(message -> {
-                    System.out.println("Got one here !!!");
-                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
-                });
-        final Source<Message, NotUsed> source =
-                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Sink<Message, CompletionStage<Done>> sink = Sink.foreach(message ->
+            promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject())
+        );
+        final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
         final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
             sink,
             source,
@@ -335,8 +331,7 @@ public class BasicResultsTest {
                 Sink.foreach(message -> {
                     promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
                 });
-        final Source<Message, NotUsed> source =
-                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
         final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
                 sink,
                 source,
@@ -358,8 +353,7 @@ public class BasicResultsTest {
                 Sink.foreach(message -> {
                     promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
                 });
-        final Source<Message, NotUsed> source =
-                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
         final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
                 sink,
                 source,
@@ -376,6 +370,18 @@ public class BasicResultsTest {
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
 
+    private Source<Message, Cancellable> jsonSource(JsValue value, long millis) {
+        scala.concurrent.Promise<Message> p = Promise$.MODULE$.apply();
+        actorSystem.scheduler().schedule(
+            FiniteDuration.Zero(),
+            FiniteDuration.apply(millis, TimeUnit.MILLISECONDS),
+            () -> p.trySuccess(TextMessage.create(value.stringify())),
+            actorSystem.dispatcher()
+        );
+        return Source.<Message>tick(FiniteDuration.Zero(), FiniteDuration.apply(millis, TimeUnit.MILLISECONDS), TextMessage.create(value.stringify()));
+        // return Source.fromFuture(p.future());
+    }
+
     @Test
     public void testWebsocketSimple() throws Exception {
         Promise<JsObject> promise = Promise.create();
@@ -383,8 +389,7 @@ public class BasicResultsTest {
                 Sink.foreach(message -> {
                     promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
                 });
-        final Source<Message, NotUsed> source =
-                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
         final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
                 sink,
                 source,
@@ -398,7 +403,7 @@ public class BasicResultsTest {
                 .thenRun(() -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
-        Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
+        Assert.assertEquals(Json.obj().with("msg", "Hello World!"), jsonBody.asObject());
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -620,7 +625,6 @@ public class BasicResultsTest {
             return WebSocket.accept(ctx ->
                 Flow.fromSinkAndSource(
                     Sink.foreach(msg -> logger.info(msg)),
-                    // Source.maybe()
                     Source.tick(FiniteDuration.Zero(), FiniteDuration.create(10, TimeUnit.MILLISECONDS), Json.obj().with("msg", "Hello World!").stringify())
                 )
             );

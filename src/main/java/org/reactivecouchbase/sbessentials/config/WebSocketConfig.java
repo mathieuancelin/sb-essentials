@@ -25,6 +25,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 @EnableWebSocket
@@ -60,7 +61,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 });
             })
             .forEach(p ->
-                    registry.addHandler(new FlowWebSocketHandler(actorSystem, p._2.handler), p._1) // .addInterceptors(new UriTemplateHandshakeInterceptor())
+                    registry.addHandler(new FlowWebSocketHandler(actorSystem, p._2.handler), p._1).addInterceptors(new UriTemplateHandshakeInterceptor())
             );
     }
 
@@ -99,7 +100,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
             /* Retrieve template variables */
             Map<String, String> uriTemplateVars = (Map<String, String>) origRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            attributes.put("___pathVariables", uriTemplateVars);
+            attributes.put("___pathVariables", uriTemplateVars == null ? new HashMap<>() : uriTemplateVars);
             return true;
         }
 

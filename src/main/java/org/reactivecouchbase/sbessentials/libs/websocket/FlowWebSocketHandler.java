@@ -62,8 +62,7 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
                 connections.put(session.getId(), matQueue);
             });
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error after Websocket connection established", e);
         }
     }
 
@@ -74,8 +73,7 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
                 queue.offer(message.getPayload())
             );
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error while handling Websocket message", e);
         }
     }
 
@@ -85,8 +83,7 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
             get(session.getId()).forEach(SourceQueueWithComplete::complete);
             connections.remove(session.getId());
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Error after closing Websocket connection", e);
         }
     }
 
