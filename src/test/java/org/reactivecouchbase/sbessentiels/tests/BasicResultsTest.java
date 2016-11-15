@@ -388,9 +388,12 @@ public class BasicResultsTest {
                 .addPathSegment("tests")
                 .addPathSegment("websocketping")
                 .callNoMat(flow);
-        List<String> messages = Await.result(promise.future(), MAX_AWAIT).map(p -> p.asTextMessage()).map(p -> p.getStrictText());
+        List<String> messages = Await
+                .result(promise.future(), MAX_AWAIT)
+                .map(Message::asTextMessage)
+                .map(TextMessage::getStrictText);
         System.out.println(messages.mkString(", "));
-        // Assert.assertEquals(Json.obj().with("hello", "world"), messages);
+        Assert.assertEquals(List.of("chunk", "chunk", "chunk", "chunk", "chunk", "chunk", "chunk", "chunk", "chunk", "chunk"), messages);
     }
 
     @Test
@@ -734,7 +737,7 @@ public class BasicResultsTest {
         public void preStart() {
             ActorRef self = getSelf();
             getContext().system().scheduler().schedule(FiniteDuration.Zero(), FiniteDuration.apply(100, TimeUnit.MILLISECONDS), () -> {
-                self.tell(TextMessage.create("First"), ActorRef.noSender());
+                self.tell(TextMessage.create("chunk"), ActorRef.noSender());
             }, context().dispatcher());
         }
 
