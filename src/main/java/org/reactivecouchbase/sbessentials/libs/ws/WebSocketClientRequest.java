@@ -136,21 +136,21 @@ public class WebSocketClientRequest {
 
     public static class WebSocketConnections<T> {
 
-        private final CompletionStage<WebSocketUpgradeResponse> connectionOpened;
+        private final CompletionStage<WebSocketUpgradeResponse> response;
 
-        private final CompletionStage<T> connectionClosed;
+        private final CompletionStage<T> materialized;
 
-        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> connectionOpened, CompletionStage<T> connectionClosed) {
-            this.connectionOpened = connectionOpened;
-            this.connectionClosed = connectionClosed;
+        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> response, CompletionStage<T> materialized) {
+            this.response = response;
+            this.materialized = materialized;
         }
 
-        public CompletionStage<WebSocketUpgradeResponse> connectionOpened() {
-            return connectionOpened;
+        public CompletionStage<WebSocketUpgradeResponse> response() {
+            return response;
         }
 
-        public CompletionStage<T> connectionClosed() {
-            return connectionClosed;
+        public CompletionStage<T> materialized() {
+            return materialized;
         }
     }
 

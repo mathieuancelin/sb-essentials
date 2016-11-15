@@ -307,7 +307,7 @@ public class BasicResultsTest {
             .addPathSegment("websocket")
             .addPathSegment("Mathieu")
             .call(flow)
-            .connectionClosed()
+            .materialized()
                 .thenApply(message -> {
                     System.out.println("Closed ...");
                     return Json.parse(message.asTextMessage().getStrictText()).asObject();
@@ -336,7 +336,7 @@ public class BasicResultsTest {
         );
         Future<JsObject> future = Future.from(WS.websocketHost("ws://echo.websocket.org/")
             .call(flow)
-            .connectionClosed()
+            .materialized()
             .thenApply(message -> {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
@@ -359,7 +359,7 @@ public class BasicResultsTest {
             .addPathSegment("tests")
             .addPathSegment("websocketping")
             .call(flow)
-            .connectionClosed()
+            .materialized()
             .thenApply(message -> {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
@@ -382,7 +382,7 @@ public class BasicResultsTest {
             .addPathSegment("tests")
             .addPathSegment("websocketsimple")
             .call(flow)
-            .connectionClosed()
+            .materialized()
             .thenApply(message -> {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
