@@ -376,7 +376,7 @@ public class BasicResultsTest {
 
     @Test
     public void testWebsocketPing2() throws Exception {
-        Promise<List<WebSocketMessage>> promise = Promise.create();
+        Promise<List<Message>> promise = Promise.create();
         final Flow<Message, Message, NotUsed> flow =  ActorFlow.actorRef(
             out -> WebSocketClientActor.props(out, promise),
             1000,
@@ -388,7 +388,7 @@ public class BasicResultsTest {
                 .addPathSegment("tests")
                 .addPathSegment("websocketping")
                 .callNoMat(flow);
-        List<String> messages = Await.result(promise.future(), MAX_AWAIT).map(p -> (org.springframework.web.socket.TextMessage) p).map(p -> p.getPayload());
+        List<String> messages = Await.result(promise.future(), MAX_AWAIT).map(p -> p.asTextMessage()).map(p -> p.getStrictText());
         System.out.println(messages.mkString(", "));
         // Assert.assertEquals(Json.obj().with("hello", "world"), messages);
     }
@@ -717,35 +717,39 @@ public class BasicResultsTest {
 
         private AtomicInteger count = new AtomicInteger(0);
 
-        private List<WebSocketMessage> messages = List.empty();
+        private List<Message> messages = List.empty();
 
-        private Promise<List<WebSocketMessage>> promise;
+        private Promise<List<Message>> promise;
 
-        public WebSocketClientActor(ActorRef out, Promise<List<WebSocketMessage>> promise) {
+        public WebSocketClientActor(ActorRef out, Promise<List<akka.http.javadsl.model.ws.Message>> promise) {
             this.out = out;
             this.promise = promise;
         }
 
-        public static Props props(ActorRef out, Promise<List<WebSocketMessage>> promise) {
+        public static Props props(ActorRef out, Promise<List<akka.http.javadsl.model.ws.Message>> promise) {
             return Props.create(WebSocketClientActor.class, () -> new WebSocketClientActor(out, promise));
         }
 
         @Override
         public void preStart() {
-            getSelf().tell(TextMessage.create("First Pouet"), ActorRef.noSender());
+            ActorRef self = getSelf();
+            getContext().system().scheduler().schedule(FiniteDuration.Zero(), FiniteDuration.apply(100, TimeUnit.MILLISECONDS), () -> {
+                self.tell(TextMessage.create("First"), ActorRef.noSender());
+            }, context().dispatcher());
         }
 
         public void onReceive(Object message) throws Exception {
             logger.info("[WebSocketClientActor] received message {}", message);
-            if (message instanceof org.springframework.web.socket.WebSocketMessage) {
+            if (message != null && akka.http.javadsl.model.ws.Message.class.isAssignableFrom(message.getClass())) {
                 if (count.get() == 10) {
                     promise.trySuccess(messages);
                     out.tell(PoisonPill.getInstance(), ActorRef.noSender());
                     getSelf().tell(PoisonPill.getInstance(), ActorRef.noSender());
                 } else {
+                    logger.info("[WebSocketClientActor] Sending a chunk {}", count.get());
                     count.incrementAndGet();
-                    messages = messages.append((WebSocketMessage) message);
-                    out.tell(TextMessage.create("Pouet"), getSelf());
+                    messages = messages.append((akka.http.javadsl.model.ws.Message) message);
+                    out.tell(TextMessage.create("chunk"), getSelf());
                 }
             } else {
                 unhandled(message);
@@ -771,6 +775,7 @@ public class BasicResultsTest {
         public void onReceive(Object message) throws Exception {
             logger.info("[WebsocketPing] received message {}", message);
             if (message instanceof org.springframework.web.socket.WebSocketMessage) {
+                logger.info("[WebsocketPing] Sending back message");
                 out.tell(message, getSelf());
             } else {
                 unhandled(message);

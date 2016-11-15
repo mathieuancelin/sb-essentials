@@ -49,9 +49,8 @@ public class FlowWebSocketHandler extends AbstractWebSocketHandler {
             flow.onSuccess(f -> {
                 SourceQueueWithComplete<WebSocketMessage> matQueue = queue
                     .via(f)
-                    .to(Sink.foreach(msg ->
-                        session.sendMessage(msg))
-                    ).run(materializer);
+                    .to(Sink.foreach(session::sendMessage))
+                    .run(materializer);
                 matQueue.watchCompletion().thenAccept(done -> {
                     try {
                         session.close(CloseStatus.GOING_AWAY);
