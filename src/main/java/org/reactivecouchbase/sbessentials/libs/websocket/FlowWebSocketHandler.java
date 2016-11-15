@@ -12,9 +12,9 @@ import org.reactivecouchbase.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.function.Function;
 /**
  * Created by adelegue on 13/11/2016.
  */
-public class FlowWebSocketHandler extends TextWebSocketHandler {
+public class FlowWebSocketHandler extends AbstractWebSocketHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowWebSocketHandler.class);
 
@@ -31,11 +31,11 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
 
     private final ActorMaterializer materializer;
 
-    private final Map<String, SourceQueueWithComplete<String>> connections = new HashMap<>();
+    private final Map<String, SourceQueueWithComplete<WebSocketMessage>> connections = new HashMap<>();
 
-    final Function<WebSocketContext, Future<Flow<String, String, ?>>> handler;
+    final Function<WebSocketContext, Future<Flow<WebSocketMessage, WebSocketMessage, ?>>> handler;
 
-    public FlowWebSocketHandler(ActorSystem system, Function<WebSocketContext, Future<Flow<String, String, ?>>> handler) {
+    public FlowWebSocketHandler(ActorSystem system, Function<WebSocketContext, Future<Flow<WebSocketMessage, WebSocketMessage, ?>>> handler) {
         this.system = system;
         this.materializer = ActorMaterializer.create(system);
         this.handler = handler;
@@ -44,13 +44,13 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         try {
-            Source<String, SourceQueueWithComplete<String>> queue = Source.queue(50, OverflowStrategy.backpressure());
-            Future<Flow<String, String, ?>> flow = handler.apply(new WebSocketContext(session));
+            Source<WebSocketMessage, SourceQueueWithComplete<WebSocketMessage>> queue = Source.queue(50, OverflowStrategy.backpressure());
+            Future<Flow<WebSocketMessage, WebSocketMessage, ?>> flow = handler.apply(new WebSocketContext(session));
             flow.onSuccess(f -> {
-                SourceQueueWithComplete<String> matQueue = queue
+                SourceQueueWithComplete<WebSocketMessage> matQueue = queue
                     .via(f)
                     .to(Sink.foreach(msg ->
-                        session.sendMessage(new TextMessage(msg)))
+                        session.sendMessage(msg))
                     ).run(materializer);
                 matQueue.watchCompletion().thenAccept(done -> {
                     try {
@@ -67,10 +67,10 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    public void handleMessage(WebSocketSession session, WebSocketMessage message) throws Exception {
         try {
             get(session.getId()).forEach(queue ->
-                queue.offer(message.getPayload())
+                queue.offer(message)
             );
         } catch (Exception e) {
             LOGGER.error("Error while handling Websocket message", e);
@@ -87,7 +87,7 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private Option<SourceQueueWithComplete<String>> get(String id) {
+    private Option<SourceQueueWithComplete<WebSocketMessage>> get(String id) {
         return Option.of(connections.get(id));
     }
 }

@@ -1,6 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpHeader;
@@ -129,9 +130,24 @@ public class WebSocketClientRequest {
                 flow,
                 materializer
             );
-        final CompletionStage<WebSocketUpgradeResponse> connected = pair.first(); // .thenApply(this.upgradeHandler);
+        final CompletionStage<WebSocketUpgradeResponse> connected = pair.first();
         final CompletionStage<T> closed = pair.second();
         return new WebSocketConnections<T>(connected, closed);
+    }
+
+    public CompletionStage<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, NotUsed> flow) {
+        String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
+        List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
+        String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
+        WebSocketRequest request = WebSocketRequest.create(url);
+        request = _headers.foldLeft(request, WebSocketRequest::addHeader);
+        final Pair<CompletionStage<WebSocketUpgradeResponse>, NotUsed> pair =
+                Http.get(system).singleWebSocketRequest(
+                        request,
+                        flow,
+                        materializer
+                );
+        return pair.first();
     }
 
     public static class WebSocketConnections<T> {

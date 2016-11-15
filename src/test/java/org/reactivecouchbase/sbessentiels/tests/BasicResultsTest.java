@@ -1,6 +1,7 @@
 package org.reactivecouchbase.sbessentiels.tests;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.*;
 import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.ws.Message;
@@ -50,12 +51,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.socket.WebSocketMessage;
+import scala.Boolean;
 import scala.concurrent.Promise$;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -72,6 +76,7 @@ public class BasicResultsTest {
     private static final Duration MAX_AWAIT = Duration.parse("4s");
     @Autowired public WebApplicationContext ctx;
     @Autowired public ActorSystem actorSystem;
+    @Autowired public ActorMaterializer actorMaterializer;
 
     @Before
     public void injectStaticStuff() {
@@ -370,6 +375,25 @@ public class BasicResultsTest {
     }
 
     @Test
+    public void testWebsocketPing2() throws Exception {
+        Promise<List<WebSocketMessage>> promise = Promise.create();
+        final Flow<Message, Message, NotUsed> flow =  ActorFlow.actorRef(
+            out -> WebSocketClientActor.props(out, promise),
+            1000,
+            OverflowStrategy.dropNew(),
+            actorSystem,
+            actorMaterializer
+        );
+        WS.websocketHost("ws://localhost:7001")
+                .addPathSegment("tests")
+                .addPathSegment("websocketping")
+                .callNoMat(flow);
+        List<String> messages = Await.result(promise.future(), MAX_AWAIT).map(p -> (org.springframework.web.socket.TextMessage) p).map(p -> p.getPayload());
+        System.out.println(messages.mkString(", "));
+        // Assert.assertEquals(Json.obj().with("hello", "world"), messages);
+    }
+
+    @Test
     public void testWebsocketSimple() throws Exception {
         final Sink<Message, CompletionStage<Message>> sink = Sink.head();
         final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
@@ -610,8 +634,12 @@ public class BasicResultsTest {
         public WebSocket simpleWebsocket() {
             return WebSocket.accept(ctx ->
                 Flow.fromSinkAndSource(
-                    Sink.foreach(msg -> logger.info(msg)),
-                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(10, TimeUnit.MILLISECONDS), Json.obj().with("msg", "Hello World!").stringify())
+                    Sink.foreach(msg -> logger.info(msg.getPayload().toString())),
+                    Source.tick(
+                        FiniteDuration.Zero(),
+                        FiniteDuration.create(10, TimeUnit.MILLISECONDS),
+                        new org.springframework.web.socket.TextMessage(Json.obj().with("msg", "Hello World!").stringify())
+                    )
                 )
             );
         }
@@ -668,13 +696,57 @@ public class BasicResultsTest {
 
         public void onReceive(Object message) throws Exception {
             logger.info("[MyWebSocketActor] received message {}", message);
-            if (message instanceof String) {
-                JsValue value = Json.parse((String) message);
+            if (message instanceof org.springframework.web.socket.TextMessage) {
+                JsValue value = Json.parse(((org.springframework.web.socket.TextMessage) message).getPayload());
                 JsValue response = Json.obj()
                         .with("sent_at", System.currentTimeMillis())
                         .with("resource", ctx.pathParam("id").getOrElse("No value !!!"))
                         .with("sourceMessage", value);
-                out.tell(response.stringify(), getSelf());
+                out.tell(new org.springframework.web.socket.TextMessage(response.stringify()), getSelf());
+            } else {
+                unhandled(message);
+            }
+        }
+    }
+
+    private static class WebSocketClientActor extends UntypedActor {
+
+        private final ActorRef out;
+
+        private static final Logger logger = LoggerFactory.getLogger(WebSocketClientActor.class);
+
+        private AtomicInteger count = new AtomicInteger(0);
+
+        private List<WebSocketMessage> messages = List.empty();
+
+        private Promise<List<WebSocketMessage>> promise;
+
+        public WebSocketClientActor(ActorRef out, Promise<List<WebSocketMessage>> promise) {
+            this.out = out;
+            this.promise = promise;
+        }
+
+        public static Props props(ActorRef out, Promise<List<WebSocketMessage>> promise) {
+            return Props.create(WebSocketClientActor.class, () -> new WebSocketClientActor(out, promise));
+        }
+
+        @Override
+        public void preStart() {
+            getSelf().tell(TextMessage.create("First Pouet"), ActorRef.noSender());
+        }
+
+        public void onReceive(Object message) throws Exception {
+            logger.info("[WebSocketClientActor] received message {}", message);
+            if (message instanceof org.springframework.web.socket.WebSocketMessage) {
+                if (count.get() == 10) {
+                    promise.trySuccess(messages);
+                    out.tell(PoisonPill.getInstance(), ActorRef.noSender());
+                    getSelf().tell(PoisonPill.getInstance(), ActorRef.noSender());
+                } else {
+                    count.incrementAndGet();
+                    messages = messages.append((WebSocketMessage) message);
+                    out.tell(TextMessage.create("Pouet"), getSelf());
+                }
             } else {
                 unhandled(message);
             }
@@ -698,7 +770,7 @@ public class BasicResultsTest {
 
         public void onReceive(Object message) throws Exception {
             logger.info("[WebsocketPing] received message {}", message);
-            if (message instanceof String) {
+            if (message instanceof org.springframework.web.socket.WebSocketMessage) {
                 out.tell(message, getSelf());
             } else {
                 unhandled(message);

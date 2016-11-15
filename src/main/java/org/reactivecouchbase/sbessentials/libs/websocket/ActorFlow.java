@@ -1,7 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.websocket;
 
+import akka.NotUsed;
 import akka.actor.*;
-import akka.japi.Creator;
 import akka.japi.Pair;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 public class ActorFlow {
 
-    public static <In, Out> Flow<In, Out, ?> actorRef(
+    public static <In, Out> Flow<In, Out, NotUsed> actorRef(
             Function<ActorRef, Props> props,
             int bufferSize,
             OverflowStrategy overflowStrategy,
