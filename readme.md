@@ -157,6 +157,7 @@ public class App {
             );
         }
 
+        // Here, async action that fetch a remote webservice and returns the content
         @GetMapping("/ws")
         public Action fetchLocation() {
             return LoggedAction.async(ctx ->
@@ -204,6 +205,7 @@ public class SSEApp {
     @RequestMapping("/sse")
     public static class SSEController {
 
+        // Stream a json chunk each second forever
         @GetMapping("/stream")
         public Action sseStream() {
             return Action.sync(ctx ->
@@ -265,6 +267,7 @@ public class WebSocketApp {
 
         private final static Logger logger = LoggerFactory.getLogger(WebSocketController.class);
 
+        // Use a flow to handle input and output
         @WebSocketMapping(path = "/simple")
         public WebSocket simpleWebsocket() {
             return WebSocket.accept(ctx ->
@@ -278,15 +281,16 @@ public class WebSocketApp {
                 )
             );
         }
-    }
 
-    @WebSocketMapping(path = "/ping")
-    public WebSocket webSocketPing() {
-        return WebSocket.accept(context ->
-            ActorFlow.actorRef(
-                out -> WebsocketPing.props(context, out)
-            )
-        );
+        // Use an actor to handle input and output
+        @WebSocketMapping(path = "/ping")
+        public WebSocket webSocketPing() {
+            return WebSocket.accept(context ->
+                ActorFlow.actorRef(
+                    out -> WebsocketPing.props(context, out)
+                )
+            );
+        }
     }
 
     private static class WebsocketPing extends UntypedActor {

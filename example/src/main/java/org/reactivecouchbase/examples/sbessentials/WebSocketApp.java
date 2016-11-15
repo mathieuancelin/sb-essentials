@@ -50,15 +50,15 @@ public class WebSocketApp {
                 )
             );
         }
-    }
 
-    @WebSocketMapping(path = "/ping")
-    public WebSocket webSocketPing() {
-        return WebSocket.accept(context ->
-            ActorFlow.actorRef(
-                out -> WebsocketPing.props(context, out)
-            )
-        );
+        @WebSocketMapping(path = "/ping")
+        public WebSocket webSocketPing() {
+            return WebSocket.accept(context ->
+                    ActorFlow.actorRef(
+                            out -> WebsocketPing.props(context, out)
+                    )
+            );
+        }
     }
 
     private static class WebsocketPing extends UntypedActor {
