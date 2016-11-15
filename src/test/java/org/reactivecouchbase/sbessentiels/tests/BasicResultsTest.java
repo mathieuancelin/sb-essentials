@@ -6,8 +6,12 @@ import akka.actor.*;
 import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
+import akka.japi.pf.ReceiveBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
+import akka.stream.actor.AbstractActorPublisher;
+import akka.stream.actor.ActorPublisher;
+import akka.stream.actor.ActorPublisherMessage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -297,6 +301,33 @@ public class BasicResultsTest {
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
     }
 
+    @Test
+    public void testSSEResultWitActor() throws Exception {
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+                .withPath("/tests/sse2")
+                .call()
+                .flatMap(r -> r.body().map(b ->
+                        Tuple.of(
+                                b.body(),
+                                r.headers()
+                        )
+                ));
+        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        java.util.List<JsObject> parts = Arrays.asList(body._1.split("\n"))
+                .stream()
+                .filter(s -> !s.trim().isEmpty())
+                .map(s -> s.replace("data: ", ""))
+                .map(s -> Json.parse(s).asObject())
+                .collect(Collectors.toList());
+        for (JsObject obj : parts) {
+            Assert.assertTrue(obj.exists("Hello"));
+            Assert.assertEquals(obj.field("Hello").asString(), "World!");
+        }
+        Assert.assertEquals(3, parts.size());
+        Assert.assertEquals("text/event-stream", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
+        Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
+    }
+
 
     @Test
     public void testWebsocketResult() throws Exception {
@@ -507,6 +538,19 @@ public class BasicResultsTest {
                     }
                 });
 
+                return result;
+            });
+        }
+
+        @RequestMapping(method = RequestMethod.GET, path = "/sse2")
+        public Action testStream2() {
+            return Action.sync(ctx -> {
+                Result result = Ok.stream(SSEActor.source()).as("text/event-stream");
+                result.materializedValue(ActorRef.class).andThen(ttry -> {
+                   for (ActorRef ref : ttry.asSuccess()) {
+                       ref.tell("START", ActorRef.noSender());
+                   }
+                });
                 return result;
             });
         }
@@ -771,6 +815,38 @@ public class BasicResultsTest {
             } else {
                 unhandled(message);
             }
+        }
+    }
+
+    private static class SSEActor extends AbstractActorPublisher<String> {
+
+        public static Props props() {
+            return Props.create(SSEActor.class, () -> new SSEActor());
+        }
+
+        public static Source<String, ActorRef> source() {
+            return Source.actorPublisher(props());
+        }
+
+        private int total = 0;
+
+        public SSEActor() {
+            receive(ReceiveBuilder.
+                matchEquals("START", val -> {
+                    System.out.println("Received Start");
+                }).
+                match(ActorPublisherMessage.Request.class, request -> {
+                    System.out.println("Ask for " + totalDemand());
+                    for (int i = 0; i < totalDemand() && i < 3; i++) {
+                        total++;
+                        onNext("data: {\"Hello\": \"World!\"}\n\n");
+                    }
+                    if (total == 3) {
+                        onComplete();
+                    }
+                }).
+                match(ActorPublisherMessage.Cancel.class, cancel -> context().stop(self())).
+                build());
         }
     }
 }
