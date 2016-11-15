@@ -20,8 +20,8 @@ public interface ActionStep {
         try {
             return this.invoke(request, block);
         } catch (Exception e) {
-            ActionsHelperInternal.logger.error("innerInvoke action error", e);
-            return Future.successful(ActionsHelperInternal.transformError(e, request));
+            InternalActionsHelper.logger.error("innerInvoke action error", e);
+            return Future.successful(InternalActionsHelper.transformError(e, request));
         }
     }
 
@@ -30,14 +30,14 @@ public interface ActionStep {
             try {
                 return block.apply(req);
             } catch (Exception e) {
-                ActionsHelperInternal.logger.error("Sync action error", e);
-                return ActionsHelperInternal.transformError(e, req);
+                InternalActionsHelper.logger.error("Sync action error", e);
+                return InternalActionsHelper.transformError(e, req);
             }
-        }, ActionsHelperInternal.executor()));
+        }, InternalActionsHelper.executor()));
     }
 
     default Action async(Function<RequestContext, Future<Result>> block) {
-        return async(ActionsHelperInternal.executor(), block);
+        return async(InternalActionsHelper.executor(), block);
     }
 
     default Action async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
@@ -46,11 +46,11 @@ public interface ActionStep {
             ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
             HttpServletRequest request = servletRequestAttributes.getRequest();
             HttpServletResponse response = servletRequestAttributes.getResponse();
-            RequestContext rc = new RequestContext(HashMap.empty(), ActionsHelperInternal.webApplicationContext, request, response, ec);
+            RequestContext rc = new RequestContext(HashMap.empty(), InternalActionsHelper.webApplicationContext, request, response, ec);
             return new Action(this, rc, block, ec);
         } else {
             return new Action(this, null, rc ->
-                Future.successful(ActionsHelperInternal.transformError(new RuntimeException("RequestAttributes is not an instance of "), null))
+                Future.successful(InternalActionsHelper.transformError(new RuntimeException("RequestAttributes is not an instance of "), null))
             , ec);
         }
     }

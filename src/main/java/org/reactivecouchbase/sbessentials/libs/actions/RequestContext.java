@@ -91,11 +91,11 @@ public class RequestContext {
     }
 
     public Future<RequestBody> body() {
-        return body(ActionsHelperInternal.executor());
+        return body(InternalActionsHelper.executor());
     }
 
     public Future<RequestBody> body(ExecutorService ec) {
-        ActorMaterializer materializer = ActionsHelperInternal.materializer();
+        ActorMaterializer materializer = InternalActionsHelper.materializer();
         return Future.fromJdkCompletableFuture(
             bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
         ).map(RequestBody::new, ec);
@@ -114,7 +114,7 @@ public class RequestContext {
     }
 
     public Publisher<ByteString> bodyAsPublisher(AsPublisher asPublisher) {
-        ActorMaterializer materializer = ActionsHelperInternal.materializer();
+        ActorMaterializer materializer = InternalActionsHelper.materializer();
         return StreamConverters.fromInputStream(() -> getRequest().getInputStream()).runWith(Sink.asPublisher(asPublisher), materializer);
     }
 

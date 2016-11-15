@@ -80,6 +80,13 @@ public static class MyController {
 }
 ```
 
+## SSE
+
+
+
+## WebSockets
+
+
 
 ## Examples
 
@@ -151,11 +158,11 @@ in your `build.gradle` file
 repositories {
     mavenCentral()
     maven {
-        url 'https://raw.github.com/mathieuancelin/sb-essentials/master/repository/snapshots/'
+        url 'https://raw.github.com/mathieuancelin/sb-essentials/master/repository/releases/'
     }
 }
 
 dependencies {
-    compile("org.reactivecouchbase:sb-essentials:1.0.0-SNAPSHOT")
+    compile("org.reactivecouchbase:sb-essentials:0.1.0")
 }
 ```

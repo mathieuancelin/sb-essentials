@@ -50,11 +50,11 @@ public class WSResponse {
     }
 
     public Future<WSBody> body() {
-        return body(WS.executor());
+        return body(InternalWSHelper.executor());
     }
 
     public Future<WSBody> body(ExecutorService ec) {
-        ActorMaterializer materializer = WS.materializer();
+        ActorMaterializer materializer = InternalWSHelper.materializer();
         Source<ByteString, ?> source = underlying.entity().getDataBytes();
         return Future.fromJdkCompletableFuture(
                 source.runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
@@ -66,7 +66,7 @@ public class WSResponse {
     }
 
     public Publisher<ByteString> bodyAsPublisher(AsPublisher asPublisher) {
-        ActorMaterializer materializer = WS.materializer();
+        ActorMaterializer materializer = InternalWSHelper.materializer();
         return underlying.entity().getDataBytes().runWith(Sink.asPublisher(asPublisher), materializer);
     }
 }

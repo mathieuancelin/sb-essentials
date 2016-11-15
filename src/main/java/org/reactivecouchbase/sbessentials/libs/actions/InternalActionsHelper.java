@@ -15,15 +15,15 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.concurrent.ExecutorService;
 
 @Component
-public class ActionsHelperInternal {
+public class InternalActionsHelper {
 
     static WebApplicationContext webApplicationContext;
 
-    static final Logger logger = LoggerFactory.getLogger(ActionsHelperInternal.class);
+    static final Logger logger = LoggerFactory.getLogger(InternalActionsHelper.class);
 
     @Autowired
     public void setWebApplicationContext(WebApplicationContext webApplicationContext) {
-        ActionsHelperInternal.webApplicationContext = webApplicationContext;
+        InternalActionsHelper.webApplicationContext = webApplicationContext;
     }
 
     static ExecutorService executor() {

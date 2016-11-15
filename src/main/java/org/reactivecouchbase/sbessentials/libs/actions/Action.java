@@ -25,7 +25,7 @@ public class Action {
             //return Future.async(() -> actionStep.innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
             //Future.successful(ActionsHelperInternal.transformError(t, rc)), ec);
             Future<Result> result = actionStep.innerInvoke(rc, block);
-            return result.recoverWith(t -> Future.successful(ActionsHelperInternal.transformError(t, rc)), ec);
+            return result.recoverWith(t -> Future.successful(InternalActionsHelper.transformError(t, rc)), ec);
         } catch (Exception e) {
             return Future.failed(e);
         }
@@ -36,14 +36,14 @@ public class Action {
     }
 
     public static Action sync(Function<RequestContext, Result> block) {
-        return ActionsHelperInternal.EMPTY.sync(block);
+        return InternalActionsHelper.EMPTY.sync(block);
     }
 
     public static Action async(Function<RequestContext, Future<Result>> block) {
-        return ActionsHelperInternal.EMPTY.async(block);
+        return InternalActionsHelper.EMPTY.async(block);
     }
 
     public static Action async(ExecutorService ec, Function<RequestContext, Future<Result>> block) {
-        return ActionsHelperInternal.EMPTY.async(ec, block);
+        return InternalActionsHelper.EMPTY.async(ec, block);
     }
 }

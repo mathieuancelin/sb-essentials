@@ -8,9 +8,7 @@ import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.japi.pf.ReceiveBuilder;
 import akka.stream.ActorMaterializer;
-import akka.stream.OverflowStrategy;
 import akka.stream.actor.AbstractActorPublisher;
-import akka.stream.actor.ActorPublisher;
 import akka.stream.actor.ActorPublisherMessage;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
@@ -35,10 +33,12 @@ import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.config.SBEssentialsConfig;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
-import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
+import org.reactivecouchbase.sbessentials.libs.actions.InternalActionsHelper;
+import org.reactivecouchbase.sbessentials.libs.result.InternalResultsHelper;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.reactivecouchbase.sbessentials.libs.websocket.*;
+import org.reactivecouchbase.sbessentials.libs.ws.InternalWSHelper;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
 import org.slf4j.Logger;
@@ -52,9 +52,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.socket.WebSocketMessage;
-import scala.Boolean;
-import scala.concurrent.Promise$;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
@@ -82,9 +79,9 @@ public class BasicResultsTest {
 
     @Before
     public void injectStaticStuff() {
-        new ActionsHelperInternal().setWebApplicationContext(ctx);
-        new Results().setWebApplicationContext(ctx);
-        new WS().setWebApplicationContext(ctx);
+        new InternalActionsHelper().setWebApplicationContext(ctx);
+        new InternalResultsHelper().setWebApplicationContext(ctx);
+        new InternalWSHelper().setWebApplicationContext(ctx);
         new InternalWebsocketHelper().setActorMaterializer(actorMaterializer);
         new InternalWebsocketHelper().setActorSystem(actorSystem);
     }

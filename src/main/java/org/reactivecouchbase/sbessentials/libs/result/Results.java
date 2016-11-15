@@ -5,22 +5,11 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.HashSet;
 import javaslang.collection.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.http.Cookie;
 
-@Component
 public class Results {
-
-    static WebApplicationContext webApplicationContext;
-
-    @Autowired
-    public void setWebApplicationContext(WebApplicationContext webApplicationContext) {
-        Results.webApplicationContext = webApplicationContext;
-    }
 
     /** Generates a ‘100 Continue’ result. */
     public static Result Continue = new Result(HttpStatus.CONTINUE.value());

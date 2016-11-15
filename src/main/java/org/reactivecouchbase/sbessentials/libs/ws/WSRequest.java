@@ -80,7 +80,7 @@ public class WSRequest {
         this.followsRedirect = Option.none();
         this.virtualHost = Option.none();
         this.contentType = ContentTypes.TEXT_PLAIN_UTF8;
-        this.materializer = WS.materializer();
+        this.materializer = InternalWSHelper.materializer();
 
     }
 
@@ -242,7 +242,7 @@ public class WSRequest {
     // TODO : handle followsRedirect
     // TODO : handle virtualHost
     public Future<WSResponse> call() {
-        return call(WS.executor());
+        return call(InternalWSHelper.executor());
     }
 
     public Future<WSResponse> call(ExecutorService ec) {
