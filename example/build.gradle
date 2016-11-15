@@ -14,13 +14,14 @@ apply plugin: 'spring-boot'
 
 group = 'org.reactivecouchbase.examples'
 version = '1.0.0-SNAPSHOT'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 jar {
     baseName 'sb-essentials-example'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+mainClassName = 'org.reactivecouchbase.examples.sbessentials.App'
 
 repositories {
     mavenCentral()
