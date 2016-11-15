@@ -74,7 +74,7 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 public class BasicResultsTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BasicResultsTest.class);
-    private static final Duration MAX_AWAIT = Duration.parse("10s");
+    private static final Duration MAX_AWAIT = Duration.parse("4s");
     @Autowired public WebApplicationContext ctx;
 
     @Before
@@ -318,7 +318,7 @@ public class BasicResultsTest {
             .addPathSegment("Mathieu")
             .call(flow)
             .connectionClosed()
-            .andThen(t -> System.out.println("Closed ..."));
+            .thenRun(() -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("sourceMessage"));
@@ -345,7 +345,7 @@ public class BasicResultsTest {
         WS.websocketHost("ws://echo.websocket.org/")
                 .call(flow)
                 .connectionClosed()
-                .andThen(t -> System.out.println("Closed ..."));
+                .thenRun(() -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
@@ -370,7 +370,7 @@ public class BasicResultsTest {
                 .addPathSegment("websocketping")
                 .call(flow)
                 .connectionClosed()
-                .andThen(t -> System.out.println("Closed ..."));
+                .thenRun(() -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
@@ -395,7 +395,7 @@ public class BasicResultsTest {
                 .addPathSegment("websocketsimple")
                 .call(flow)
                 .connectionClosed()
-                .andThen(t -> System.out.println("Closed ..."));
+                .thenRun(() -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());

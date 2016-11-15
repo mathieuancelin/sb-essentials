@@ -4,7 +4,6 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpHeader;
-import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.WebSocketRequest;
@@ -15,12 +14,10 @@ import akka.stream.javadsl.Flow;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 public class WebSocketClientRequest {
 
@@ -33,7 +30,6 @@ public class WebSocketClientRequest {
     private final String path;
     private final Map<String, List<String>> headers;
     private final Map<String, List<String>> queryParams;
-    private final Function<WebSocketUpgradeResponse, Done> upgradeHandler;
 
     public WebSocketClientRequest(ActorSystem system, ActorMaterializer materializer, Http http, String host, String path) {
         this.system = system;
@@ -43,14 +39,14 @@ public class WebSocketClientRequest {
         this.path = path;
         this.headers = HashMap.empty();
         this.queryParams = HashMap.empty();
-        this.upgradeHandler = upgrade -> {
-            logger.trace("Upgrade here " + upgrade.response().status());
-            if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
-                return Done.getInstance();
-            } else {
-                throw new RuntimeException("Connection failed: " + upgrade.response().status());
-            }
-        };
+        // this.upgradeHandler = upgrade -> {
+        //     logger.trace("Upgrade here " + upgrade.response().status());
+        //     if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
+        //         return Done.getInstance();
+        //     } else {
+        //         throw new RuntimeException("Connection failed: " + upgrade.response().status());
+        //     }
+        // };
     }
 
     private WebSocketClientRequest(Builder builder) {
@@ -61,7 +57,7 @@ public class WebSocketClientRequest {
         path = builder.path;
         headers = builder.headers;
         queryParams = builder.queryParams;
-        upgradeHandler = builder.upgradeHandler;
+        // upgradeHandler = builder.upgradeHandler;
     }
 
     static Builder newBuilder() {
@@ -77,7 +73,7 @@ public class WebSocketClientRequest {
         builder.path = copy.path;
         builder.headers = copy.headers;
         builder.queryParams = copy.queryParams;
-        builder.upgradeHandler = copy.upgradeHandler;
+        // builder.upgradeHandler = copy.upgradeHandler;
         return builder;
     }
 
@@ -121,10 +117,6 @@ public class WebSocketClientRequest {
         return copy().withPath(this.path + "/" + path).build();
     }
 
-    public WebSocketClientRequest onRequestUpgrade(Function<WebSocketUpgradeResponse, Done> handler) {
-        return copy().withUpgradeHandler(handler).build();
-    }
-
     public WebSocketConnections call(Flow<Message, Message, CompletionStage<Done>> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
@@ -137,32 +129,28 @@ public class WebSocketClientRequest {
                 flow,
                 materializer
             );
-        final CompletionStage<Done> connected = pair.first().thenApply(this.upgradeHandler);
+        final CompletionStage<WebSocketUpgradeResponse> connected = pair.first(); // .thenApply(this.upgradeHandler);
         final CompletionStage<Done> closed = pair.second();
-        return new WebSocketConnections(
-            Future.from(connected),
-            Future.from(closed)
-        );
+        return new WebSocketConnections(connected, closed);
     }
 
     public static class WebSocketConnections {
-        private final Future<Done> connectionOpened;
-        private final Future<Done> connectionClosed;
-        WebSocketConnections(Future<Done> connectionOpened, Future<Done> connectionClosed) {
+
+        private final CompletionStage<WebSocketUpgradeResponse> connectionOpened;
+
+        private final CompletionStage<Done> connectionClosed;
+
+        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> connectionOpened, CompletionStage<Done> connectionClosed) {
             this.connectionOpened = connectionOpened;
             this.connectionClosed = connectionClosed;
         }
 
-        public Future<Done> connectionOpened() {
+        public CompletionStage<WebSocketUpgradeResponse> connectionOpened() {
             return connectionOpened;
         }
 
-        public Future<Done> connectionClosed() {
+        public CompletionStage<Done> connectionClosed() {
             return connectionClosed;
-        }
-
-        public void closeConnection() {
-            // TODO : with completablefuture stuff
         }
     }
 
@@ -175,7 +163,7 @@ public class WebSocketClientRequest {
         private String path;
         private Map<String, List<String>> headers;
         private Map<String, List<String>> queryParams;
-        private Function<WebSocketUpgradeResponse, Done> upgradeHandler;
+        // private Function<WebSocketUpgradeResponse, Done> upgradeHandler;
 
         private Builder() {
         }
@@ -215,10 +203,10 @@ public class WebSocketClientRequest {
             return this;
         }
 
-        public Builder withUpgradeHandler(Function<WebSocketUpgradeResponse, Done> val) {
-            upgradeHandler = val;
-            return this;
-        }
+        // public Builder withUpgradeHandler(Function<WebSocketUpgradeResponse, Done> val) {
+        //     upgradeHandler = val;
+        //     return this;
+        // }
 
         public WebSocketClientRequest build() {
             return new WebSocketClientRequest(this);
