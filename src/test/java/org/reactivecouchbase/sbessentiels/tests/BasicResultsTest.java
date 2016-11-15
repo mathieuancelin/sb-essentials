@@ -621,7 +621,7 @@ public class BasicResultsTest {
                 Flow.fromSinkAndSource(
                     Sink.foreach(msg -> logger.info(msg)),
                     // Source.maybe()
-                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), Json.obj().with("msg", "Hello World!").stringify())
+                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(10, TimeUnit.MILLISECONDS), Json.obj().with("msg", "Hello World!").stringify())
                 )
             );
         }
@@ -665,6 +665,7 @@ public class BasicResultsTest {
 
         private final ActorRef out;
         private final WebSocketContext ctx;
+        private static final Logger logger = LoggerFactory.getLogger(WebsocketPing.class);
 
         public MyWebSocketActor(WebSocketContext ctx, ActorRef out) {
             this.out = out;
@@ -676,6 +677,7 @@ public class BasicResultsTest {
         }
 
         public void onReceive(Object message) throws Exception {
+            logger.info("[MyWebSocketActor] received message {}", message);
             if (message instanceof String) {
                 JsValue value = Json.parse((String) message);
                 JsValue response = Json.obj()
@@ -693,6 +695,7 @@ public class BasicResultsTest {
 
         private final ActorRef out;
         private final WebSocketContext ctx;
+        private static final Logger logger = LoggerFactory.getLogger(WebsocketPing.class);
 
         public WebsocketPing(WebSocketContext ctx, ActorRef out) {
             this.out = out;
@@ -704,6 +707,7 @@ public class BasicResultsTest {
         }
 
         public void onReceive(Object message) throws Exception {
+            logger.info("[WebsocketPing] received message {}", message);
             if (message instanceof String) {
                 out.tell(message, getSelf());
             } else {

@@ -48,11 +48,17 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
             Future<Flow<String, String, ?>> flow = handler.apply(new WebSocketContext(session));
             flow.onSuccess(f -> {
                 SourceQueueWithComplete<String> matQueue = queue
-                        .via(f)
-                        .to(Sink.foreach(msg ->
-                                session.sendMessage(new TextMessage(msg)))
-                        )
-                        .run(materializer);
+                    .via(f)
+                    .to(Sink.foreach(msg ->
+                        session.sendMessage(new TextMessage(msg)))
+                    ).run(materializer);
+                matQueue.watchCompletion().thenAccept(done -> {
+                    try {
+                        session.close(CloseStatus.GOING_AWAY);
+                    } catch (Exception e) {
+                        LOGGER.error("Error while closing websocket session", e);
+                    }
+                });
                 connections.put(session.getId(), matQueue);
             });
         } catch (Exception e) {
