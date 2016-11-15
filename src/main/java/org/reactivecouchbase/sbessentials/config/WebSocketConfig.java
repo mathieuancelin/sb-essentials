@@ -60,7 +60,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 });
             })
             .forEach(p ->
-                    registry.addHandler(new FlowWebSocketHandler(actorSystem, p._2.handler), p._1).addInterceptors(new UriTemplateHandshakeInterceptor())
+                    registry.addHandler(new FlowWebSocketHandler(actorSystem, p._2.handler), p._1) // .addInterceptors(new UriTemplateHandshakeInterceptor())
             );
     }
 
@@ -75,13 +75,13 @@ public class WebSocketConfig implements WebSocketConfigurer {
             RequestMapping requestMapping = controller.getClass().getAnnotation(RequestMapping.class);
             String[] paths = requestMapping.path().length > 0 ? requestMapping.path() : requestMapping.value();
             return List.of(paths)
-                    .map(rootPath -> {
-                        if(rootPath.endsWith("/")) {
-                            return rootPath.substring(0, rootPath.length()-1);
-                        } else {
-                            return rootPath;
-                        }
-                    });
+                .map(rootPath -> {
+                    if(rootPath.endsWith("/")) {
+                        return rootPath.substring(0, rootPath.length()-1);
+                    } else {
+                        return rootPath;
+                    }
+                });
 
         }
         return List.of("");

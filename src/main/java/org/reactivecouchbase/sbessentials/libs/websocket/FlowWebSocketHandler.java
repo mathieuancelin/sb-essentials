@@ -43,30 +43,45 @@ public class FlowWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        Source<String, SourceQueueWithComplete<String>> queue = Source.queue(50, OverflowStrategy.backpressure());
-        Future<Flow<String, String, ?>> flow = handler.apply(new WebSocketContext(session));
-        flow.onSuccess(f -> {
-            SourceQueueWithComplete<String> matQueue = queue
-                    .via(f)
-                    .to(Sink.foreach(msg ->
-                            session.sendMessage(new TextMessage(msg)))
-                    )
-                    .run(materializer);
-            connections.put(session.getId(), matQueue);
-        });
+        try {
+            Source<String, SourceQueueWithComplete<String>> queue = Source.queue(50, OverflowStrategy.backpressure());
+            Future<Flow<String, String, ?>> flow = handler.apply(new WebSocketContext(session));
+            flow.onSuccess(f -> {
+                SourceQueueWithComplete<String> matQueue = queue
+                        .via(f)
+                        .to(Sink.foreach(msg ->
+                                session.sendMessage(new TextMessage(msg)))
+                        )
+                        .run(materializer);
+                connections.put(session.getId(), matQueue);
+            });
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        get(session.getId()).forEach(queue ->
+        try {
+            get(session.getId()).forEach(queue ->
                 queue.offer(message.getPayload())
-        );
+            );
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        get(session.getId()).forEach(SourceQueueWithComplete::complete);
-        connections.remove(session.getId());
+        try {
+            get(session.getId()).forEach(SourceQueueWithComplete::complete);
+            connections.remove(session.getId());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private Option<SourceQueueWithComplete<String>> get(String id) {

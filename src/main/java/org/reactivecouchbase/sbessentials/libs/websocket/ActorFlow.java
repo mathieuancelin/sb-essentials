@@ -22,31 +22,37 @@ public class ActorFlow {
         Pair<ActorRef, Publisher<Out>> pair =
                 Source.<Out>actorRef(bufferSize, overflowStrategy).toMat(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), Keep.both()).run(mat);
 
-        Creator<Actor> creator = (Creator<Actor>) () -> new UntypedActor() {
-            private ActorRef flowActor = context().watch(context().actorOf(props.apply(pair.first()), "flowActor"));
-            @Override
-            public void onReceive(Object message) throws Throwable {
-                if (message instanceof Status.Success) {
-                    flowActor.tell(PoisonPill.getInstance(), getSelf());
-                } else if (message instanceof Terminated) {
-                    context().stop(getSelf());
-                } else {
-                    flowActor.tell(message, getSelf());
-                }
-            }
-
-            @Override
-            public SupervisorStrategy supervisorStrategy() {
-                return SupervisorStrategy.stoppingStrategy();
-            }
-        };
-
         return Flow.fromSinkAndSource(
             Sink.actorRef(
-                factory.actorOf(Props.create(creator)),
+                factory.actorOf(Props.create(WebsocketFlowActor.class, () -> new WebsocketFlowActor(props, pair.first()))),
                 new Status.Success(new Object())
             ),
             Source.fromPublisher(pair.second())
         );
+    }
+
+    private static class WebsocketFlowActor extends UntypedActor {
+
+        private final ActorRef flowActor;
+
+        public WebsocketFlowActor(Function<ActorRef, Props> props, ActorRef ref) {
+            flowActor = context().watch(context().actorOf(props.apply(ref), "flowActor"));
+        }
+
+        @Override
+        public void onReceive(Object message) throws Throwable {
+            if (message instanceof Status.Success) {
+                flowActor.tell(PoisonPill.getInstance(), getSelf());
+            } else if (message instanceof Terminated) {
+                context().stop(getSelf());
+            } else {
+                flowActor.tell(message, getSelf());
+            }
+        }
+
+        @Override
+        public SupervisorStrategy supervisorStrategy() {
+            return SupervisorStrategy.stoppingStrategy();
+        }
     }
 }

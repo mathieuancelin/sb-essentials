@@ -601,7 +601,7 @@ public class BasicResultsTest {
         public Action testWebsocket() {
             return Action.sync(ctx ->
                 Ok.html("<html><body><script>\n"
-                    + "window.ws = new WebSocket('ws://localhost:7001/tests/websocket/mat');\n"
+                    + "window.ws = new WebSocket('ws://localhost:7001/tests/websocketsimple');\n"
                     + "window.ws.onopen = function(e) { \n"
                     + "  console.log('open', e);\n"
                     + "  setTimeout(function() {\n"
@@ -620,6 +620,7 @@ public class BasicResultsTest {
             return WebSocket.accept(ctx ->
                 Flow.fromSinkAndSource(
                     Sink.foreach(msg -> logger.info(msg)),
+                    // Source.maybe()
                     Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), Json.obj().with("msg", "Hello World!").stringify())
                 )
             );
@@ -631,7 +632,7 @@ public class BasicResultsTest {
                 ActorFlow.actorRef(
                     out -> WebsocketPing.props(context, out),
                     1000,
-                    OverflowStrategy.backpressure(),
+                    OverflowStrategy.dropNew(),
                     actorSystem,
                     materializer
                 )
@@ -644,7 +645,7 @@ public class BasicResultsTest {
                 ActorFlow.actorRef(
                     out -> MyWebSocketActor.props(context, out),
                     1000,
-                    OverflowStrategy.backpressure(),
+                    OverflowStrategy.dropNew(),
                     actorSystem,
                     materializer
                 )
@@ -671,7 +672,7 @@ public class BasicResultsTest {
         }
 
         public static Props props(WebSocketContext ctx, ActorRef out) {
-            return Props.create((Creator<Actor>) () -> new MyWebSocketActor(ctx, out));
+            return Props.create(MyWebSocketActor.class, () -> new MyWebSocketActor(ctx, out));
         }
 
         public void onReceive(Object message) throws Exception {
@@ -699,12 +700,11 @@ public class BasicResultsTest {
         }
 
         public static Props props(WebSocketContext ctx, ActorRef out) {
-            return Props.create((Creator<Actor>) () -> new MyWebSocketActor(ctx, out));
+            return Props.create(WebsocketPing.class, () -> new WebsocketPing(ctx, out));
         }
 
         public void onReceive(Object message) throws Exception {
             if (message instanceof String) {
-                JsValue value = Json.parse((String) message);
                 out.tell(message, getSelf());
             } else {
                 unhandled(message);
