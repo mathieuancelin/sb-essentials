@@ -1,12 +1,10 @@
 package org.reactivecouchbase.sbessentiels.tests;
 
 import akka.Done;
-import akka.NotUsed;
 import akka.actor.*;
 import akka.http.javadsl.model.HttpMethods;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
-import akka.japi.Creator;
 import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Flow;
@@ -56,7 +54,6 @@ import scala.concurrent.Promise$;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -324,6 +321,10 @@ public class BasicResultsTest {
         Assert.assertTrue(jsonBody.exists("sent_at"));
     }
 
+    private Source<Message, Cancellable> jsonSource(JsValue value, long millis) {
+        return Source.tick(FiniteDuration.Zero(), FiniteDuration.apply(millis, TimeUnit.MILLISECONDS), TextMessage.create(value.stringify()));
+    }
+
     @Test
     public void testWebsocketExternal() throws Exception {
         Promise<JsObject> promise = Promise.create();
@@ -368,18 +369,6 @@ public class BasicResultsTest {
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
-    }
-
-    private Source<Message, Cancellable> jsonSource(JsValue value, long millis) {
-        scala.concurrent.Promise<Message> p = Promise$.MODULE$.apply();
-        actorSystem.scheduler().schedule(
-            FiniteDuration.Zero(),
-            FiniteDuration.apply(millis, TimeUnit.MILLISECONDS),
-            () -> p.trySuccess(TextMessage.create(value.stringify())),
-            actorSystem.dispatcher()
-        );
-        return Source.<Message>tick(FiniteDuration.Zero(), FiniteDuration.apply(millis, TimeUnit.MILLISECONDS), TextMessage.create(value.stringify()));
-        // return Source.fromFuture(p.future());
     }
 
     @Test
