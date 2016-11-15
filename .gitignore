@@ -3,6 +3,6 @@
 *.iml
 /build
 *.class
-*.jar
 .DS_Store
 /target
+/classes
