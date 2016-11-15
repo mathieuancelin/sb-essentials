@@ -34,10 +34,7 @@ import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionsHelperInternal;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.reactivecouchbase.sbessentials.libs.result.Results;
-import org.reactivecouchbase.sbessentials.libs.websocket.ActorFlow;
-import org.reactivecouchbase.sbessentials.libs.websocket.WebSocket;
-import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketContext;
-import org.reactivecouchbase.sbessentials.libs.websocket.WebSocketMapping;
+import org.reactivecouchbase.sbessentials.libs.websocket.*;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.reactivecouchbase.sbessentials.libs.ws.WSResponse;
 import org.slf4j.Logger;
@@ -74,6 +71,7 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 public class BasicResultsTest {
 
     private static final Duration MAX_AWAIT = Duration.parse("4s");
+
     @Autowired public WebApplicationContext ctx;
     @Autowired public ActorSystem actorSystem;
     @Autowired public ActorMaterializer actorMaterializer;
@@ -83,6 +81,8 @@ public class BasicResultsTest {
         new ActionsHelperInternal().setWebApplicationContext(ctx);
         new Results().setWebApplicationContext(ctx);
         new WS().setWebApplicationContext(ctx);
+        new InternalWebsocketHelper().setActorMaterializer(actorMaterializer);
+        new InternalWebsocketHelper().setActorSystem(actorSystem);
     }
 
     @SpringBootConfiguration
@@ -378,11 +378,7 @@ public class BasicResultsTest {
     public void testWebsocketPing2() throws Exception {
         Promise<List<Message>> promise = Promise.create();
         final Flow<Message, Message, NotUsed> flow =  ActorFlow.actorRef(
-            out -> WebSocketClientActor.props(out, promise),
-            1000,
-            OverflowStrategy.dropNew(),
-            actorSystem,
-            actorMaterializer
+            out -> WebSocketClientActor.props(out, promise)
         );
         WS.websocketHost("ws://localhost:7001")
                 .addPathSegment("tests")
@@ -651,11 +647,7 @@ public class BasicResultsTest {
         public WebSocket webSocketPing() {
             return WebSocket.accept(context ->
                 ActorFlow.actorRef(
-                    out -> WebsocketPing.props(context, out),
-                    1000,
-                    OverflowStrategy.dropNew(),
-                    actorSystem,
-                    materializer
+                    out -> WebsocketPing.props(context, out)
                 )
             );
         }
@@ -664,11 +656,7 @@ public class BasicResultsTest {
         public WebSocket webSocketWithContext() {
             return WebSocket.accept(context ->
                 ActorFlow.actorRef(
-                    out -> MyWebSocketActor.props(context, out),
-                    1000,
-                    OverflowStrategy.dropNew(),
-                    actorSystem,
-                    materializer
+                    out -> MyWebSocketActor.props(context, out)
                 )
             );
         }

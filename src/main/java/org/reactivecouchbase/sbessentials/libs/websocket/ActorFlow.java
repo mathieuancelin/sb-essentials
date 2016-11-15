@@ -12,6 +12,41 @@ import java.util.function.Function;
 
 public class ActorFlow {
 
+    public static <In, Out> Flow<In, Out, NotUsed> actorRef(Function<ActorRef, Props> props) {
+        return actorRef(
+            props,
+            1000,
+            OverflowStrategy.dropNew(),
+            InternalWebsocketHelper.actorSystem(),
+            InternalWebsocketHelper.actorMaterializer()
+        );
+    }
+
+    public static <In, Out> Flow<In, Out, NotUsed> actorRef(
+            Function<ActorRef, Props> props,
+            int bufferSize) {
+        return actorRef(
+            props,
+            bufferSize,
+            OverflowStrategy.dropNew(),
+            InternalWebsocketHelper.actorSystem(),
+            InternalWebsocketHelper.actorMaterializer()
+        );
+    }
+
+    public static <In, Out> Flow<In, Out, NotUsed> actorRef(
+            Function<ActorRef, Props> props,
+            int bufferSize,
+            OverflowStrategy overflowStrategy) {
+        return actorRef(
+            props,
+            bufferSize,
+            overflowStrategy,
+            InternalWebsocketHelper.actorSystem(),
+            InternalWebsocketHelper.actorMaterializer()
+        );
+    }
+
     public static <In, Out> Flow<In, Out, NotUsed> actorRef(
             Function<ActorRef, Props> props,
             int bufferSize,
