@@ -73,7 +73,7 @@ public class App {
             return WebSocket.accept(context ->
                 Flow.fromSinkAndSource(
                     Sink.foreach(msg -> logger.info(msg)),
-                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), "msg" + context.pathVariable("id"))
+                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), "msg" + context.pathParam("id").getOrElse("nothing"))
                 )
             );
         }

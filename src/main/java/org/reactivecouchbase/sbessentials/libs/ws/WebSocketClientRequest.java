@@ -4,7 +4,6 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpHeader;
-import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.model.ws.Message;
@@ -17,12 +16,15 @@ import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import org.reactivecouchbase.concurrent.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 public class WebSocketClientRequest {
+
+    static final Logger logger = LoggerFactory.getLogger(WebSocketClientRequest.class);
 
     private final ActorSystem system;
     private final ActorMaterializer materializer;
@@ -42,9 +44,8 @@ public class WebSocketClientRequest {
         this.headers = HashMap.empty();
         this.queryParams = HashMap.empty();
         this.upgradeHandler = upgrade -> {
-            System.out.println("Upgrade here " + upgrade.response().status());
+            logger.trace("Upgrade here " + upgrade.response().status());
             if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
-                System.out.println("DOUM done");
                 return Done.getInstance();
             } else {
                 throw new RuntimeException("Connection failed: " + upgrade.response().status());
@@ -145,11 +146,23 @@ public class WebSocketClientRequest {
     }
 
     public static class WebSocketConnections {
-        public final Future<Done> connectionOpened;
-        public final Future<Done> connectionClosed;
+        private final Future<Done> connectionOpened;
+        private final Future<Done> connectionClosed;
         WebSocketConnections(Future<Done> connectionOpened, Future<Done> connectionClosed) {
             this.connectionOpened = connectionOpened;
             this.connectionClosed = connectionClosed;
+        }
+
+        public Future<Done> connectionOpened() {
+            return connectionOpened;
+        }
+
+        public Future<Done> connectionClosed() {
+            return connectionClosed;
+        }
+
+        public void closeConnection() {
+            // TODO : with completablefuture stuff
         }
     }
 

@@ -317,14 +317,88 @@ public class BasicResultsTest {
             .addPathSegment("websocket")
             .addPathSegment("Mathieu")
             .call(flow)
-            .connectionClosed
+            .connectionClosed()
             .andThen(t -> System.out.println("Closed ..."));
         JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("sourceMessage"));
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.field("sourceMessage").asObject());
         Assert.assertTrue(jsonBody.exists("resource"));
         Assert.assertEquals("Mathieu", jsonBody.field("resource").asString());
         Assert.assertTrue(jsonBody.exists("sent_at"));
+    }
+
+    @Test
+    public void testWebsocketExternal() throws Exception {
+        Promise<JsObject> promise = Promise.create();
+        final Sink<Message, CompletionStage<Done>> sink =
+                Sink.foreach(message -> {
+                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
+                });
+        final Source<Message, NotUsed> source =
+                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
+                sink,
+                source,
+                Keep.left()
+        );
+        WS.websocketHost("ws://echo.websocket.org/")
+                .call(flow)
+                .connectionClosed()
+                .andThen(t -> System.out.println("Closed ..."));
+        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        System.out.println(jsonBody.pretty());
+        Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
+    }
+
+    @Test
+    public void testWebsocketPing() throws Exception {
+        Promise<JsObject> promise = Promise.create();
+        final Sink<Message, CompletionStage<Done>> sink =
+                Sink.foreach(message -> {
+                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
+                });
+        final Source<Message, NotUsed> source =
+                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
+                sink,
+                source,
+                Keep.left()
+        );
+        WS.websocketHost("ws://localhost:7001")
+                .addPathSegment("tests")
+                .addPathSegment("websocketping")
+                .call(flow)
+                .connectionClosed()
+                .andThen(t -> System.out.println("Closed ..."));
+        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        System.out.println(jsonBody.pretty());
+        Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
+    }
+
+    @Test
+    public void testWebsocketSimple() throws Exception {
+        Promise<JsObject> promise = Promise.create();
+        final Sink<Message, CompletionStage<Done>> sink =
+                Sink.foreach(message -> {
+                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
+                });
+        final Source<Message, NotUsed> source =
+                Source.single(TextMessage.create(Json.obj().with("hello", "world").stringify()));
+        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
+                sink,
+                source,
+                Keep.left()
+        );
+        WS.websocketHost("ws://localhost:7001")
+                .addPathSegment("tests")
+                .addPathSegment("websocketsimple")
+                .call(flow)
+                .connectionClosed()
+                .andThen(t -> System.out.println("Closed ..."));
+        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        System.out.println(jsonBody.pretty());
+        Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -541,8 +615,31 @@ public class BasicResultsTest {
             );
         }
 
+        @WebSocketMapping(path = "/websocketsimple")
+        public WebSocket simpleWebsocket() {
+            return WebSocket.accept(ctx ->
+                Flow.fromSinkAndSource(
+                    Sink.foreach(msg -> logger.info(msg)),
+                    Source.tick(FiniteDuration.Zero(), FiniteDuration.create(1, TimeUnit.SECONDS), Json.obj().with("msg", "Hello World!").stringify())
+                )
+            );
+        }
+
+        @WebSocketMapping(path = "/websocketping")
+        public WebSocket webSocketPing() {
+            return WebSocket.accept(context ->
+                ActorFlow.actorRef(
+                    out -> WebsocketPing.props(context, out),
+                    1000,
+                    OverflowStrategy.backpressure(),
+                    actorSystem,
+                    materializer
+                )
+            );
+        }
+
         @WebSocketMapping(path = "/websocket/{id}")
-        public WebSocket webSocket() {
+        public WebSocket webSocketWithContext() {
             return WebSocket.accept(context ->
                 ActorFlow.actorRef(
                     out -> MyWebSocketActor.props(context, out),
@@ -585,6 +682,30 @@ public class BasicResultsTest {
                         .with("resource", ctx.pathParam("id").getOrElse("No value !!!"))
                         .with("sourceMessage", value);
                 out.tell(response.stringify(), getSelf());
+            } else {
+                unhandled(message);
+            }
+        }
+    }
+
+    private static class WebsocketPing extends UntypedActor {
+
+        private final ActorRef out;
+        private final WebSocketContext ctx;
+
+        public WebsocketPing(WebSocketContext ctx, ActorRef out) {
+            this.out = out;
+            this.ctx = ctx;
+        }
+
+        public static Props props(WebSocketContext ctx, ActorRef out) {
+            return Props.create((Creator<Actor>) () -> new MyWebSocketActor(ctx, out));
+        }
+
+        public void onReceive(Object message) throws Exception {
+            if (message instanceof String) {
+                JsValue value = Json.parse((String) message);
+                out.tell(message, getSelf());
             } else {
                 unhandled(message);
             }
