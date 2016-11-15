@@ -295,24 +295,24 @@ public class BasicResultsTest {
 
     @Test
     public void testWebsocketResult() throws Exception {
-        Promise<JsObject> promise = Promise.create();
-        final Sink<Message, CompletionStage<Done>> sink = Sink.foreach(message ->
-            promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject())
-        );
+        final Sink<Message, CompletionStage<Message>> sink = Sink.head();
         final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
-        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
+        final Flow<Message, Message, CompletionStage<Message>> flow = Flow.fromSinkAndSourceMat(
             sink,
             source,
             Keep.left()
         );
-        WS.websocketHost("ws://localhost:7001")
+        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
             .addPathSegment("tests")
             .addPathSegment("websocket")
             .addPathSegment("Mathieu")
             .call(flow)
             .connectionClosed()
-            .thenRun(() -> System.out.println("Closed ..."));
-        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+                .thenApply(message -> {
+                    System.out.println("Closed ...");
+                    return Json.parse(message.asTextMessage().getStrictText()).asObject();
+                }));
+        JsObject jsonBody = Await.result(future, MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("sourceMessage"));
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.field("sourceMessage").asObject());
@@ -327,70 +327,67 @@ public class BasicResultsTest {
 
     @Test
     public void testWebsocketExternal() throws Exception {
-        Promise<JsObject> promise = Promise.create();
-        final Sink<Message, CompletionStage<Done>> sink =
-                Sink.foreach(message -> {
-                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
-                });
+        final Sink<Message, CompletionStage<Message>> sink = Sink.head();
         final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
-        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
-                sink,
-                source,
-                Keep.left()
+        final Flow<Message, Message, CompletionStage<Message>> flow = Flow.fromSinkAndSourceMat(
+            sink,
+            source,
+            Keep.left()
         );
-        WS.websocketHost("ws://echo.websocket.org/")
-                .call(flow)
-                .connectionClosed()
-                .thenRun(() -> System.out.println("Closed ..."));
-        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        Future<JsObject> future = Future.from(WS.websocketHost("ws://echo.websocket.org/")
+            .call(flow)
+            .connectionClosed()
+            .thenApply(message -> {
+                System.out.println("Closed ...");
+                return Json.parse(message.asTextMessage().getStrictText()).asObject();
+            }));
+        JsObject jsonBody = Await.result(future, MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
 
     @Test
     public void testWebsocketPing() throws Exception {
-        Promise<JsObject> promise = Promise.create();
-        final Sink<Message, CompletionStage<Done>> sink =
-                Sink.foreach(message -> {
-                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
-                });
+        final Sink<Message, CompletionStage<Message>> sink = Sink.head();
         final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
-        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
-                sink,
-                source,
-                Keep.left()
+        final Flow<Message, Message, CompletionStage<Message>> flow = Flow.fromSinkAndSourceMat(
+            sink,
+            source,
+            Keep.left()
         );
-        WS.websocketHost("ws://localhost:7001")
-                .addPathSegment("tests")
-                .addPathSegment("websocketping")
-                .call(flow)
-                .connectionClosed()
-                .thenRun(() -> System.out.println("Closed ..."));
-        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
+            .addPathSegment("tests")
+            .addPathSegment("websocketping")
+            .call(flow)
+            .connectionClosed()
+            .thenApply(message -> {
+                System.out.println("Closed ...");
+                return Json.parse(message.asTextMessage().getStrictText()).asObject();
+            }));
+        JsObject jsonBody = Await.result(future, MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
 
     @Test
     public void testWebsocketSimple() throws Exception {
-        Promise<JsObject> promise = Promise.create();
-        final Sink<Message, CompletionStage<Done>> sink =
-                Sink.foreach(message -> {
-                    promise.trySuccess(Json.parse(message.asTextMessage().getStrictText()).asObject());
-                });
+        final Sink<Message, CompletionStage<Message>> sink = Sink.head();
         final Source<Message, Cancellable> source = jsonSource(Json.obj().with("hello", "world"), 100);
-        final Flow<Message, Message, CompletionStage<Done>> flow = Flow.fromSinkAndSourceMat(
-                sink,
-                source,
-                Keep.left()
+        final Flow<Message, Message, CompletionStage<Message>> flow = Flow.fromSinkAndSourceMat(
+            sink,
+            source,
+            Keep.left()
         );
-        WS.websocketHost("ws://localhost:7001")
-                .addPathSegment("tests")
-                .addPathSegment("websocketsimple")
-                .call(flow)
-                .connectionClosed()
-                .thenRun(() -> System.out.println("Closed ..."));
-        JsObject jsonBody = Await.result(promise.future(), MAX_AWAIT);
+        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
+            .addPathSegment("tests")
+            .addPathSegment("websocketsimple")
+            .call(flow)
+            .connectionClosed()
+            .thenApply(message -> {
+                System.out.println("Closed ...");
+                return Json.parse(message.asTextMessage().getStrictText()).asObject();
+            }));
+        JsObject jsonBody = Await.result(future, MAX_AWAIT);
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("msg", "Hello World!"), jsonBody.asObject());
     }

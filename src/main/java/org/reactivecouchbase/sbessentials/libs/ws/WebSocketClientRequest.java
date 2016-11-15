@@ -117,30 +117,30 @@ public class WebSocketClientRequest {
         return copy().withPath(this.path + "/" + path).build();
     }
 
-    public WebSocketConnections call(Flow<Message, Message, CompletionStage<Done>> flow) {
+    public <T> WebSocketConnections<T> call(Flow<Message, Message, CompletionStage<T>> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
         String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
-        final Pair<CompletionStage<WebSocketUpgradeResponse>, CompletionStage<Done>> pair =
+        final Pair<CompletionStage<WebSocketUpgradeResponse>, CompletionStage<T>> pair =
             Http.get(system).singleWebSocketRequest(
                 request,
                 flow,
                 materializer
             );
         final CompletionStage<WebSocketUpgradeResponse> connected = pair.first(); // .thenApply(this.upgradeHandler);
-        final CompletionStage<Done> closed = pair.second();
-        return new WebSocketConnections(connected, closed);
+        final CompletionStage<T> closed = pair.second();
+        return new WebSocketConnections<T>(connected, closed);
     }
 
-    public static class WebSocketConnections {
+    public static class WebSocketConnections<T> {
 
         private final CompletionStage<WebSocketUpgradeResponse> connectionOpened;
 
-        private final CompletionStage<Done> connectionClosed;
+        private final CompletionStage<T> connectionClosed;
 
-        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> connectionOpened, CompletionStage<Done> connectionClosed) {
+        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> connectionOpened, CompletionStage<T> connectionClosed) {
             this.connectionOpened = connectionOpened;
             this.connectionClosed = connectionClosed;
         }
@@ -149,7 +149,7 @@ public class WebSocketClientRequest {
             return connectionOpened;
         }
 
-        public CompletionStage<Done> connectionClosed() {
+        public CompletionStage<T> connectionClosed() {
             return connectionClosed;
         }
     }
