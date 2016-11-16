@@ -7,16 +7,15 @@ import akka.util.ByteString;
 import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
-import com.google.common.io.Files;
 import javaslang.collection.HashMap;
 import javaslang.collection.HashSet;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.common.Throwables;
-import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.concurrent.Promise;
+import javaslang.concurrent.Future;
+import javaslang.concurrent.Promise;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
+import org.reactivecouchbase.json.Throwables;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +27,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.StringWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -54,7 +50,7 @@ public class Result {
     public final HashMap<String, List<String>> headers;
     public final HashSet<Cookie> cookies;
     public final String contentType;
-    public final Promise<Object> materializedValue = Promise.create();
+    public final Promise<Object> materializedValue = Promise.make();
 
     public Result(int status, Source<ByteString, ?> source, String contentType, HashMap<String, List<String>> headers, HashSet<Cookie> cookies) {
         this.status = status;
@@ -184,7 +180,7 @@ public class Result {
     }
 
     public Result sendFile(File file) {
-        Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> Files.asByteSource(file).openStream());
+        Source<ByteString, ?> source = StreamConverters.fromInputStream(() -> new FileInputStream(file));
         return Result.copy(this).withSource(source).build();
     }
 
@@ -285,8 +281,8 @@ public class Result {
         return materializedValue.future();
     }
 
-    public <T> Future<T> materializedValue(Class<T> as) {
-        return materializedValue.future().mapTo(as);
+    public <T> Future<T> materializedValue(Class<T> clazz) {
+        return materializedValue.future().map(value -> clazz.cast(value));
     }
 
     public String toString() {

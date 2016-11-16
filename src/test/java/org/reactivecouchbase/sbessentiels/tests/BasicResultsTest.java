@@ -14,29 +14,29 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import javaslang.Tuple;
+import javaslang.Tuple2;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import javaslang.collection.Traversable;
+import javaslang.concurrent.Future;
+import javaslang.concurrent.Promise;
+import javaslang.control.Option;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.reactivecouchbase.common.Duration;
-import org.reactivecouchbase.concurrent.Await;
-import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.concurrent.Promise;
-import org.reactivecouchbase.functional.Tuple;
 import org.reactivecouchbase.json.JsObject;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.sbessentials.config.SBEssentialsConfig;
+import org.reactivecouchbase.sbessentials.config.Tools;
 import org.reactivecouchbase.sbessentials.libs.actions.Action;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionStep;
 import org.reactivecouchbase.sbessentials.libs.actions.InternalActionsHelper;
 import org.reactivecouchbase.sbessentials.libs.result.InternalResultsHelper;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
-import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.reactivecouchbase.sbessentials.libs.websocket.*;
 import org.reactivecouchbase.sbessentials.libs.ws.InternalWSHelper;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
@@ -52,11 +52,16 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.WebApplicationContext;
+import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -70,8 +75,6 @@ import static org.reactivecouchbase.sbessentials.libs.result.Results.Ok;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextConfiguration(classes = { BasicResultsTest.Application.class, SBEssentialsConfig.class, BasicResultsTest.TestController.class })
 public class BasicResultsTest {
-
-    private static final Duration MAX_AWAIT = Duration.parse("4s");
 
     @Autowired public WebApplicationContext ctx;
     @Autowired public ActorSystem actorSystem;
@@ -101,14 +104,14 @@ public class BasicResultsTest {
 
     @Test
     public void testTextResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/text").call()
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/text").call()
             .flatMap(r -> r.body().map(b ->
                 Tuple.of(
                     b.body(),
                     r.headers()
                 )
             ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals("Hello World!\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -116,14 +119,14 @@ public class BasicResultsTest {
 
     @Test
     public void testPathParamResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/hello/Mathieu").call()
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/hello/Mathieu").call()
                 .flatMap(r -> r.body().map(b ->
                         Tuple.of(
                                 b.body(),
                                 r.headers()
                         )
                 ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals("Hello Mathieu!\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -131,7 +134,7 @@ public class BasicResultsTest {
 
     @Test
     public void testHugeTextResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/huge")
             .withHeader("Api-Key", "12345")
             .call()
@@ -141,7 +144,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals(TestController.VERY_HUGE_TEXT + "\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -150,7 +153,7 @@ public class BasicResultsTest {
     @Test
     public void testJsonResult() throws Exception {
         // Thread.sleep(Duration.of("10min").toMillis());
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/json")
             .withHeader("Api-Key", "12345")
             .call()
@@ -160,7 +163,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<JsValue, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals(Json.obj().with("message", "Hello World!"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -168,7 +171,7 @@ public class BasicResultsTest {
 
     @Test
     public void testAsyncJsonResult() throws Exception {
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/ws")
             .withHeader("Api-Key", "12345")
             .withQueryParam("q", "81.246.24.51")
@@ -179,7 +182,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<JsValue, Map<String, List<String>>> body = fuBody.get();
         JsObject jsonBody = body._1.asObject();
         Assert.assertTrue(jsonBody.exists("latitude"));
         Assert.assertTrue(jsonBody.exists("longitude"));
@@ -192,7 +195,7 @@ public class BasicResultsTest {
 
     @Test
     public void testAsyncJsonResult2() throws Exception {
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/ws2")
             .withHeader("Api-Key", "12345")
             .call()
@@ -202,7 +205,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<JsValue, Map<String, List<String>>> body = fuBody.get();
         JsObject jsonBody = body._1.asObject();
         Assert.assertTrue(jsonBody.exists("latitude"));
         Assert.assertTrue(jsonBody.exists("longitude"));
@@ -216,7 +219,7 @@ public class BasicResultsTest {
     @Test
     public void testPostJsonResult() throws Exception {
         String uuid = UUID.randomUUID().toString();
-        Future<Tuple<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<JsValue, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/post")
             .withMethod(HttpMethods.POST)
             .withHeader("Api-Key", "12345")
@@ -228,7 +231,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<JsValue, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<JsValue, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals(Json.obj().with("uuid", uuid).with("processed_by", "SB"), body._1);
         Assert.assertEquals("application/json", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -236,7 +239,7 @@ public class BasicResultsTest {
 
     @Test
     public void testHtmlResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/html")
             .withHeader("Api-Key", "12345")
             .call()
@@ -246,7 +249,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals("<h1>Hello World!</h1>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -254,7 +257,7 @@ public class BasicResultsTest {
 
     @Test
     public void testTemplateResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
                 .withPath("/tests/template")
                 .withHeader("Api-Key", "12345")
                 .call()
@@ -264,7 +267,7 @@ public class BasicResultsTest {
                                 r.headers()
                         )
                 ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         Assert.assertEquals("<div><h1>Hello Mathieu!</h1></div>", body._1);
         Assert.assertEquals("text/html", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
         Assert.assertEquals("chunked", body._2.get("X-Transfer-Encoding").flatMap(Traversable::headOption).getOrElse("none"));
@@ -272,7 +275,7 @@ public class BasicResultsTest {
 
     @Test
     public void testSSEResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
             .withPath("/tests/sse")
             .withHeader("Api-Key", "12345")
             .call()
@@ -282,7 +285,7 @@ public class BasicResultsTest {
                     r.headers()
                 )
             ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         java.util.List<JsObject> parts = Arrays.asList(body._1.split("\n"))
                 .stream()
                 .filter(s -> !s.trim().isEmpty())
@@ -300,7 +303,7 @@ public class BasicResultsTest {
 
     @Test
     public void testSSEResultWitActor() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+        Future<Tuple2<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
                 .withPath("/tests/sse2")
                 .call()
                 .flatMap(r -> r.body().map(b ->
@@ -309,7 +312,7 @@ public class BasicResultsTest {
                                 r.headers()
                         )
                 ));
-        Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
+        Tuple2<String, Map<String, List<String>>> body = fuBody.get();
         java.util.List<JsObject> parts = Arrays.asList(body._1.split("\n"))
                 .stream()
                 .filter(s -> !s.trim().isEmpty())
@@ -335,7 +338,7 @@ public class BasicResultsTest {
             source,
             Keep.left()
         );
-        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
+        Future<JsObject> future = Tools.fromJdkCompletionStage(WS.websocketHost("ws://localhost:7001")
             .addPathSegment("tests")
             .addPathSegment("websocket")
             .addPathSegment("Mathieu")
@@ -345,7 +348,7 @@ public class BasicResultsTest {
                     System.out.println("Closed ...");
                     return Json.parse(message.asTextMessage().getStrictText()).asObject();
                 }));
-        JsObject jsonBody = Await.result(future, MAX_AWAIT);
+        JsObject jsonBody = future.get();
         System.out.println(jsonBody.pretty());
         Assert.assertTrue(jsonBody.exists("sourceMessage"));
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.field("sourceMessage").asObject());
@@ -367,14 +370,14 @@ public class BasicResultsTest {
             source,
             Keep.left()
         );
-        Future<JsObject> future = Future.from(WS.websocketHost("ws://echo.websocket.org/")
+        Future<JsObject> future = Tools.fromJdkCompletionStage(WS.websocketHost("ws://echo.websocket.org/")
             .call(flow)
             .materialized()
             .thenApply(message -> {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
             }));
-        JsObject jsonBody = Await.result(future, MAX_AWAIT);
+        JsObject jsonBody = future.get();
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
@@ -388,7 +391,7 @@ public class BasicResultsTest {
             source,
             Keep.left()
         );
-        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
+        Future<JsObject> future = Tools.fromJdkCompletionStage(WS.websocketHost("ws://localhost:7001")
             .addPathSegment("tests")
             .addPathSegment("websocketping")
             .call(flow)
@@ -397,14 +400,14 @@ public class BasicResultsTest {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
             }));
-        JsObject jsonBody = Await.result(future, MAX_AWAIT);
+        JsObject jsonBody = future.get();
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("hello", "world"), jsonBody.asObject());
     }
 
     @Test
     public void testWebsocketPing2() throws Exception {
-        Promise<List<Message>> promise = Promise.create();
+        Promise<List<Message>> promise = Promise.make();
         final Flow<Message, Message, NotUsed> flow =  ActorFlow.actorRef(
             out -> WebSocketClientActor.props(out, promise)
         );
@@ -412,8 +415,7 @@ public class BasicResultsTest {
                 .addPathSegment("tests")
                 .addPathSegment("websocketping")
                 .callNoMat(flow);
-        List<String> messages = Await
-                .result(promise.future(), MAX_AWAIT)
+        List<String> messages = Tools.await(promise.future())
                 .map(Message::asTextMessage)
                 .map(TextMessage::getStrictText);
         System.out.println(messages.mkString(", "));
@@ -429,7 +431,7 @@ public class BasicResultsTest {
             source,
             Keep.left()
         );
-        Future<JsObject> future = Future.from(WS.websocketHost("ws://localhost:7001")
+        Future<JsObject> future = Tools.fromJdkCompletionStage(WS.websocketHost("ws://localhost:7001")
             .addPathSegment("tests")
             .addPathSegment("websocketsimple")
             .call(flow)
@@ -438,7 +440,7 @@ public class BasicResultsTest {
                 System.out.println("Closed ...");
                 return Json.parse(message.asTextMessage().getStrictText()).asObject();
             }));
-        JsObject jsonBody = Await.result(future, MAX_AWAIT);
+        JsObject jsonBody = future.get();
         System.out.println(jsonBody.pretty());
         Assert.assertEquals(Json.obj().with("msg", "Hello World!"), jsonBody.asObject());
     }
@@ -456,8 +458,8 @@ public class BasicResultsTest {
         @Autowired ActorSystem actorSystem;
         @Autowired ActorMaterializer materializer;
 
-        private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").orElse(req.queryParam("Api-Key")).fold(
-            () -> {
+        private static ActionStep ApiKeyCheck = (req, block) -> req.header("Api-Key").orElse(req.queryParam("Api-Key")).toRight(Option.none()).fold(
+            (none) -> {
                 logger.info("No API KEY provided");
                 return Future.successful(BadRequest.json(Json.obj().with("error", "No API KEY provided")));
             },
@@ -481,7 +483,7 @@ public class BasicResultsTest {
             logger.info(
                     "[Log] after action -> {} : took {}",
                     req.getRequest().getRequestURI(),
-                    Duration.of(System.currentTimeMillis() - req.getValue("start", Long.class), TimeUnit.MILLISECONDS).toHumanReadable()
+                    Duration.of(System.currentTimeMillis() - req.getValue("start", Long.class), ChronoUnit.MILLIS).toString()
             , req.currentExecutor());
         });
 
@@ -523,7 +525,7 @@ public class BasicResultsTest {
                 ).as("text/event-stream");
 
                 result.materializedValue(Cancellable.class).andThen(ttry -> {
-                    for (Cancellable c : ttry.asSuccess()) {
+                    for (Cancellable c : ttry) {
                         after(
                                 FiniteDuration.create(500, TimeUnit.MILLISECONDS),
                                 actorSystem.scheduler(),
@@ -544,7 +546,7 @@ public class BasicResultsTest {
             return Action.sync(ctx -> {
                 Result result = Ok.stream(SSEActor.source()).as("text/event-stream");
                 result.materializedValue(ActorRef.class).andThen(ttry -> {
-                   for (ActorRef ref : ttry.asSuccess()) {
+                   for (ActorRef ref : ttry) {
                        ref.tell("START", ActorRef.noSender());
                    }
                 });

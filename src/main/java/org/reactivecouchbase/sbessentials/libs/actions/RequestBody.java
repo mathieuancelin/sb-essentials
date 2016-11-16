@@ -5,9 +5,9 @@ import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import javaslang.control.Try;
-import org.reactivecouchbase.common.Throwables;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
+import org.reactivecouchbase.json.Throwables;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 

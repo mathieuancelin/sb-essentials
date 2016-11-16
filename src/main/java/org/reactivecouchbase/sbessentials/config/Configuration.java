@@ -3,7 +3,7 @@ package org.reactivecouchbase.sbessentials.config;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import javaslang.collection.List;
-import org.reactivecouchbase.functional.Option;
+import javaslang.control.Option;
 
 import java.util.function.Supplier;
 

@@ -1,7 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
 import javaslang.collection.HashMap;
-import org.reactivecouchbase.concurrent.Future;
+import javaslang.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -26,14 +26,14 @@ public interface ActionStep {
     }
 
     default Action sync(Function<RequestContext, Result> block) {
-        return async(req -> Future.async(() -> {
+        return async(req -> Future.of(InternalActionsHelper.executor(), () -> {
             try {
                 return block.apply(req);
             } catch (Exception e) {
                 InternalActionsHelper.logger.error("Sync action error", e);
                 return InternalActionsHelper.transformError(e, req);
             }
-        }, InternalActionsHelper.executor()));
+        }));
     }
 
     default Action async(Function<RequestContext, Future<Result>> block) {

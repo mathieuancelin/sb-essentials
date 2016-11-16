@@ -10,9 +10,10 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.functional.Option;
+import javaslang.concurrent.Future;
+import javaslang.control.Option;
 import org.reactivestreams.Publisher;
+import org.reactivecouchbase.sbessentials.config.Tools;
 
 import java.util.concurrent.ExecutorService;
 
@@ -46,7 +47,7 @@ public class WSResponse {
     }
 
     public Option<String> header(String name) {
-        return Option.fromJdkOptional(underlying.getHeader(name)).map(HttpHeader::value);
+        return Option.ofOptional(underlying.getHeader(name)).map(HttpHeader::value);
     }
 
     public Future<WSBody> body() {
@@ -56,9 +57,9 @@ public class WSResponse {
     public Future<WSBody> body(ExecutorService ec) {
         ActorMaterializer materializer = InternalWSHelper.materializer();
         Source<ByteString, ?> source = underlying.entity().getDataBytes();
-        return Future.fromJdkCompletableFuture(
+        return Tools.fromJdkCompletableFuture(ec,
                 source.runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
-        ).map(WSBody::new, ec);
+        ).map(WSBody::new);
     }
 
     public Source<ByteString, ?> bodyAsStream() {

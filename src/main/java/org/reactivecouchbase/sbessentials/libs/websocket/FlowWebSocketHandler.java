@@ -7,8 +7,8 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
+import javaslang.concurrent.Future;
 import javaslang.control.Option;
-import org.reactivecouchbase.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.CloseStatus;
@@ -20,9 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Created by adelegue on 13/11/2016.
- */
 public class FlowWebSocketHandler extends AbstractWebSocketHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowWebSocketHandler.class);

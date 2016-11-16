@@ -4,8 +4,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.reactivecouchbase.common.Duration;
-import org.reactivecouchbase.concurrent.Promise;
+import javaslang.concurrent.Promise;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +18,7 @@ import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -53,10 +53,10 @@ public class SBEssentialsConfig {
 
     {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            system.shutdown();
-            wsSystem.shutdown();
-            blockingSystem.shutdown();
-            websocketSystem.shutdown();
+            system.terminate();
+            wsSystem.terminate();
+            blockingSystem.terminate();
+            websocketSystem.terminate();
         }));
     }
 
@@ -216,7 +216,7 @@ public class SBEssentialsConfig {
 
         @Override
         public <T> Future<T> submit(Callable<T> task) {
-            Promise<T> promise = Promise.create();
+            Promise<T> promise = Promise.make();
             execute(() -> {
                 try {
                     promise.trySuccess(task.call());
@@ -224,12 +224,12 @@ public class SBEssentialsConfig {
                     promise.tryFailure(e);
                 }
             });
-            return promise.future().toJdkFuture();
+            return toJavaFuture(promise.future());
         }
 
         @Override
         public <T> Future<T> submit(Runnable task, T result) {
-            Promise<T> promise = Promise.create();
+            Promise<T> promise = Promise.make();
             execute(() -> {
                 try {
                     task.run();
@@ -238,12 +238,12 @@ public class SBEssentialsConfig {
                     promise.tryFailure(e);
                 }
             });
-            return promise.future().toJdkFuture();
+            return toJavaFuture(promise.future());
         }
 
         @Override
         public Future<?> submit(Runnable task) {
-            Promise<Object> promise = Promise.create();
+            Promise<Object> promise = Promise.make();
             execute(() -> {
                 try {
                     task.run();
@@ -252,7 +252,7 @@ public class SBEssentialsConfig {
                     promise.tryFailure(e);
                 }
             });
-            return promise.future().toJdkFuture();
+            return toJavaFuture(promise.future());
         }
 
         @Override
@@ -280,16 +280,35 @@ public class SBEssentialsConfig {
             executor.execute(command);
         }
     }
-}
 
-// private final AtomicReference<ExecutorService> globalExecutorRef = new AtomicReference<>(null);
-// @Value("${app.config.async.globalec.threadcount}")
-// public String threadCount;
-// @Bean
-// public ExecutorService globalExecutorService() {
-//     if (globalExecutorRef.get() == null) {
-//         ExecutorService executorService = NamedExecutors.newFixedThreadPool(Integer.valueOf(threadCount), "GlobalExecutor");
-//         globalExecutorRef.compareAndSet(null, executorService);
-//     }
-//     return globalExecutorRef.get();
-// }
+    private static <T> java.util.concurrent.Future<T> toJavaFuture(javaslang.concurrent.Future<T> fu) {
+        return new java.util.concurrent.Future<T>() {
+            @Override
+            public boolean cancel(boolean b) {
+                throw new IllegalAccessError("You can't stop the future !!!");
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return false;
+            }
+
+            @Override
+            public boolean isDone() {
+                return fu.isCompleted();
+            }
+
+            @Override
+            public T get() throws InterruptedException, ExecutionException {
+                return fu.get();
+            }
+
+            @Override
+            public T get(long l, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
+                // VERY HACKY !!!
+                fu.await();
+                return fu.get();
+            }
+        };
+    }
+}

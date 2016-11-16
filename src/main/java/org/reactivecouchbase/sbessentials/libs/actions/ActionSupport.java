@@ -67,8 +67,7 @@ public class ActionSupport {
             super(null, new Object());
             Assert.notNull(action, "Action cannot be null");
             action.run().andThen(ttry -> {
-                for (Result result : ttry.asSuccess()) {
-
+                for (Result result : ttry) {
                     result.cookies.forEach(response::addCookie);
                     SourceResponseBodyEmitter rbe = new SourceResponseBodyEmitter(result);
                     this.setResult(rbe);
@@ -88,10 +87,10 @@ public class ActionSupport {
                         }
                     });
                 }
-                for (Throwable t : ttry.asFailure()) {
+                for (Throwable t : ttry.failed()) {
                     this.setErrorResult(t);
                 }
-            }, action.ec);
+            });
         }
     }
 

@@ -1,7 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
 import javaslang.collection.*;
-import org.reactivecouchbase.functional.Option;
+import javaslang.control.Option;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -10,7 +10,7 @@ public class RequestQueryParams {
     private final Map<String, List<String>> queryParams;
 
     RequestQueryParams(HttpServletRequest request) {
-        this.queryParams = Option.apply(request.getQueryString()).map(s -> s.replace("?", "")).map(s -> List.of(s.split("\\&"))).map(params -> {
+        this.queryParams = Option.of(request.getQueryString()).map(s -> s.replace("?", "")).map(s -> List.of(s.split("\\&"))).map(params -> {
             Map<String, List<String>> queryParams = HashMap.empty();
             for (String param : params) {
                 String key = param.split("\\=")[0];
@@ -42,12 +42,6 @@ public class RequestQueryParams {
     }
 
     public Option<String> param(String name) {
-        return queryParams.get(name).flatMap(Traversable::headOption).transform(opt -> {
-           if (opt.isDefined()) {
-               return Option.apply(opt.get());
-           } else {
-               return Option.none();
-           }
-        });
+        return queryParams.get(name).flatMap(Traversable::headOption);
     }
 }

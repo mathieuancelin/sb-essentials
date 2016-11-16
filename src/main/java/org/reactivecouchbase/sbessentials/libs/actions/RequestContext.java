@@ -7,9 +7,10 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import javaslang.collection.HashMap;
-import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.functional.Option;
+import javaslang.concurrent.Future;
+import javaslang.control.Option;
 import org.reactivecouchbase.sbessentials.config.Configuration;
+import org.reactivecouchbase.sbessentials.config.Tools;
 import org.reactivestreams.Publisher;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -96,9 +97,9 @@ public class RequestContext {
 
     public Future<RequestBody> body(ExecutorService ec) {
         ActorMaterializer materializer = InternalActionsHelper.materializer();
-        return Future.fromJdkCompletableFuture(
+        return Tools.fromJdkCompletableFuture(ec,
             bodyAsStream().runFold(ByteString.empty(), ByteString::concat, materializer).toCompletableFuture()
-        ).map(RequestBody::new, ec);
+        ).map(RequestBody::new);
     }
 
     public <T> Future<T> body(BiFunction<RequestHeaders, Source<ByteString, ?>, Future<T>> bodyParser) {
@@ -119,7 +120,7 @@ public class RequestContext {
     }
 
     public Option<String> header(String name) {
-        return Option.apply(request.getHeader(name));
+        return Option.of(request.getHeader(name));
     }
 
     public RequestHeaders headers() {

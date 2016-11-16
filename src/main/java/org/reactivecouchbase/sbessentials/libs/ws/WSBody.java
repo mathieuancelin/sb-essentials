@@ -1,10 +1,10 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
 import akka.util.ByteString;
-import org.reactivecouchbase.common.Throwables;
-import org.reactivecouchbase.functional.Try;
+import javaslang.control.Try;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
+import org.reactivecouchbase.json.Throwables;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 

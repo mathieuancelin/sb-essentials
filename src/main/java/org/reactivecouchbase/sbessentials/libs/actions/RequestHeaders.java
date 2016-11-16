@@ -1,7 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
 import javaslang.collection.*;
-import org.reactivecouchbase.functional.Option;
+import javaslang.control.Option;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
@@ -11,7 +11,7 @@ public class RequestHeaders {
     private final Map<String, List<String>> headers;
 
     RequestHeaders(HttpServletRequest request) {
-        this.headers = Option.apply(request.getHeaderNames()).map(Collections::list).map(names -> {
+        this.headers = Option.of(request.getHeaderNames()).map(Collections::list).map(names -> {
             Map<String, List<String>> _headers = HashMap.empty();
             for (String name : names) {
                 _headers = _headers.put(name, List.ofAll(Collections.list(request.getHeaders(name))));
@@ -21,13 +21,7 @@ public class RequestHeaders {
     }
 
     public Option<String> header(String name) {
-        return headers.get(name).flatMap(Traversable::headOption).transform(opt -> {
-            if (opt.isDefined()) {
-                return Option.apply(opt.get());
-            } else {
-                return Option.none();
-            }
-        });
+        return headers.get(name).flatMap(Traversable::headOption);
     }
 
     public Map<String, List<String>> headers() {

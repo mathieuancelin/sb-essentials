@@ -1,6 +1,5 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
@@ -40,14 +39,6 @@ public class WebSocketClientRequest {
         this.path = path;
         this.headers = HashMap.empty();
         this.queryParams = HashMap.empty();
-        // this.upgradeHandler = upgrade -> {
-        //     logger.trace("Upgrade here " + upgrade.response().status());
-        //     if (upgrade.response().status().equals(StatusCodes.SWITCHING_PROTOCOLS)) {
-        //         return Done.getInstance();
-        //     } else {
-        //         throw new RuntimeException("Connection failed: " + upgrade.response().status());
-        //     }
-        // };
     }
 
     private WebSocketClientRequest(Builder builder) {
@@ -58,7 +49,6 @@ public class WebSocketClientRequest {
         path = builder.path;
         headers = builder.headers;
         queryParams = builder.queryParams;
-        // upgradeHandler = builder.upgradeHandler;
     }
 
     static Builder newBuilder() {
@@ -74,7 +64,6 @@ public class WebSocketClientRequest {
         builder.path = copy.path;
         builder.headers = copy.headers;
         builder.queryParams = copy.queryParams;
-        // builder.upgradeHandler = copy.upgradeHandler;
         return builder;
     }
 
@@ -179,7 +168,6 @@ public class WebSocketClientRequest {
         private String path;
         private Map<String, List<String>> headers;
         private Map<String, List<String>> queryParams;
-        // private Function<WebSocketUpgradeResponse, Done> upgradeHandler;
 
         private Builder() {
         }
@@ -218,11 +206,6 @@ public class WebSocketClientRequest {
             queryParams = val;
             return this;
         }
-
-        // public Builder withUpgradeHandler(Function<WebSocketUpgradeResponse, Done> val) {
-        //     upgradeHandler = val;
-        //     return this;
-        // }
 
         public WebSocketClientRequest build() {
             return new WebSocketClientRequest(this);

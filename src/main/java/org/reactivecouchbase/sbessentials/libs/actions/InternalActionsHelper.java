@@ -1,7 +1,7 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
 import akka.stream.ActorMaterializer;
-import org.reactivecouchbase.concurrent.Future;
+import javaslang.concurrent.Future;
 import org.reactivecouchbase.json.Json;
 import org.reactivecouchbase.json.mapping.ThrowableWriter;
 import org.reactivecouchbase.sbessentials.libs.result.Result;

@@ -1,6 +1,6 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
-import org.reactivecouchbase.concurrent.Future;
+import javaslang.concurrent.Future;
 import org.reactivecouchbase.sbessentials.libs.result.Result;
 
 import java.util.concurrent.ExecutorService;
@@ -22,10 +22,8 @@ public class Action {
 
     Future<Result> run() {
         try {
-            //return Future.async(() -> actionStep.innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
-            //Future.successful(ActionsHelperInternal.transformError(t, rc)), ec);
             Future<Result> result = actionStep.innerInvoke(rc, block);
-            return result.recoverWith(t -> Future.successful(InternalActionsHelper.transformError(t, rc)), ec);
+            return result.recover(t -> InternalActionsHelper.transformError(t, rc));
         } catch (Exception e) {
             return Future.failed(e);
         }

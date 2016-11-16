@@ -1,9 +1,9 @@
 package org.reactivecouchbase.sbessentials.libs.json;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
+import org.reactivecouchbase.json.Throwables;
+import org.reactivecouchbase.sbessentials.config.Tools;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -11,10 +11,13 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class JsonMessageConverter implements HttpMessageConverter<JsValue> {
 
@@ -38,8 +41,7 @@ public class JsonMessageConverter implements HttpMessageConverter<JsValue> {
 
     @Override
     public JsValue read(Class<? extends JsValue> clazz, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
-        String body = CharStreams.toString(new InputStreamReader(inputMessage.getBody(), Charsets.UTF_8));
-        return Json.parse(body);
+        return Json.parse(Tools.fromInputStream(inputMessage.getBody()));
     }
 
     @Override

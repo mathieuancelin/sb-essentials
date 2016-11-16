@@ -13,13 +13,13 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
-import org.reactivecouchbase.common.Duration;
-import org.reactivecouchbase.concurrent.Future;
-import org.reactivecouchbase.functional.Option;
+import javaslang.concurrent.Future;
+import javaslang.control.Option;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivestreams.Publisher;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
@@ -253,7 +253,7 @@ public class WSRequest {
             .withEntity(HttpEntities.createChunked(contentType, body))
             .addHeaders(_headers);
         CompletionStage<HttpResponse> responseFuture = Source.single(request).via(connectionFlow).runWith(Sink.head(), materializer);
-        return Future.fromJdkCompletableFuture(responseFuture.toCompletableFuture()).map(WSResponse::new, ec);
+        return Future.fromJavaFuture(ec, responseFuture.toCompletableFuture()).map(WSResponse::new);
     }
 
 
