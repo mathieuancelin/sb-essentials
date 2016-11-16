@@ -70,7 +70,7 @@ public class ActionSupport {
                 for (Result result : ttry.asSuccess()) {
 
                     result.cookies.forEach(response::addCookie);
-                    SourceResponseBodyEmmitter rbe = new SourceResponseBodyEmmitter(result);
+                    SourceResponseBodyEmitter rbe = new SourceResponseBodyEmitter(result);
                     this.setResult(rbe);
 
                     Source<ByteString, ?> source = result.source;
@@ -95,11 +95,11 @@ public class ActionSupport {
         }
     }
 
-    private static class SourceResponseBodyEmmitter extends ResponseBodyEmitter {
+    private static class SourceResponseBodyEmitter extends ResponseBodyEmitter {
 
         private final Result result;
 
-        public SourceResponseBodyEmmitter(Result result) {
+        public SourceResponseBodyEmitter(Result result) {
             this.result = result;
         }
 
