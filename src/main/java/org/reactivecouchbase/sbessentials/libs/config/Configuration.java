@@ -1,4 +1,4 @@
-package org.reactivecouchbase.sbessentials.config;
+package org.reactivecouchbase.sbessentials.libs.config;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -13,6 +13,10 @@ public class Configuration {
 
     Configuration(Config underlying) {
         this.underlying = underlying;
+    }
+
+    public static Configuration of(Config underlying) {
+        return new Configuration(underlying);
     }
 
     private <T> Option<T> readValue(String path, Supplier<T> supplier) {

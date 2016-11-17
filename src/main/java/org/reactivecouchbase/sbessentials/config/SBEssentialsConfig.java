@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory;
 import org.reactivecouchbase.common.Duration;
 import org.reactivecouchbase.concurrent.Promise;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
+import org.reactivecouchbase.sbessentials.libs.config.Configuration;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,11 +26,10 @@ import java.util.List;
 import java.util.concurrent.*;
 
 @org.springframework.context.annotation.Configuration
-public class SBEssentialsConfig {
+class SBEssentialsConfig {
 
     private final Config config = ConfigFactory.load();
-    private final org.reactivecouchbase.sbessentials.config.Configuration configuration =
-            new org.reactivecouchbase.sbessentials.config.Configuration(config);
+    private final Configuration configuration = Configuration.of(config);
 
     private final ActorSystem system = ActorSystem.create("global-system",
             config.atPath("systems.global").withFallback(ConfigFactory.empty()));
@@ -53,10 +53,10 @@ public class SBEssentialsConfig {
 
     {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            system.shutdown();
-            wsSystem.shutdown();
-            blockingSystem.shutdown();
-            websocketSystem.shutdown();
+            system.terminate();
+            wsSystem.terminate();
+            blockingSystem.terminate();
+            websocketSystem.terminate();
         }));
     }
 
@@ -69,7 +69,7 @@ public class SBEssentialsConfig {
     }
 
     @Bean
-    public org.reactivecouchbase.sbessentials.config.Configuration configuration() {
+    public Configuration configuration() {
         return configuration;
     }
 

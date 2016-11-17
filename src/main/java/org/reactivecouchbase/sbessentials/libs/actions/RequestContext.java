@@ -9,7 +9,7 @@ import akka.util.ByteString;
 import javaslang.collection.HashMap;
 import org.reactivecouchbase.concurrent.Future;
 import org.reactivecouchbase.functional.Option;
-import org.reactivecouchbase.sbessentials.config.Configuration;
+import org.reactivecouchbase.sbessentials.libs.config.Configuration;
 import org.reactivestreams.Publisher;
 import org.springframework.web.context.WebApplicationContext;
 

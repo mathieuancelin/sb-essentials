@@ -30,7 +30,7 @@ import java.util.Map;
 
 @EnableWebSocket
 @org.springframework.context.annotation.Configuration
-public class WebSocketConfig implements WebSocketConfigurer {
+class WebSocketConfig implements WebSocketConfigurer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketConfig.class);
 
