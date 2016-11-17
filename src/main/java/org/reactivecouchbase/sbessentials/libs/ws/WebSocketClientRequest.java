@@ -1,7 +1,5 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
-import akka.Done;
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpHeader;
