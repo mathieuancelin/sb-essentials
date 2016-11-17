@@ -14,9 +14,11 @@ import java.io.StringReader;
 public class WSBody {
 
     private final ByteString underlying;
+    private final String underlyingAsString;
 
     public WSBody(ByteString underlying) {
         this.underlying = underlying;
+        this.underlyingAsString = underlying.utf8String();
     }
 
     public ByteString bytes() {
@@ -24,7 +26,7 @@ public class WSBody {
     }
 
     public String body() {
-        return underlying.utf8String();
+        return underlyingAsString;
     }
 
     public JsValue json() {

@@ -18,9 +18,11 @@ import java.util.Arrays;
 public class RequestBody {
 
     private final ByteString bodyAsBytes;
+    private final String bodyAsString;
 
     RequestBody(ByteString bodyAsBytes) {
         this.bodyAsBytes = bodyAsBytes;
+        this.bodyAsString = bodyAsBytes.utf8String();
     }
 
     public ByteString asBytes() {
@@ -28,7 +30,7 @@ public class RequestBody {
     }
 
     public String asString() {
-        return bodyAsBytes.utf8String();
+        return bodyAsString;
     }
 
     public JsValue asJson() {

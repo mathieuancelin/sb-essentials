@@ -14,6 +14,7 @@ import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
 import org.reactivecouchbase.concurrent.Future;
+import org.reactivestreams.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +108,14 @@ public class WebSocketClientRequest {
         return copy().withPath(this.path + "/" + path).build();
     }
 
+    public Future<WebSocketUpgradeResponse> callNoMat(Processor<Message, Message> flow) {
+        return callNoMat(Flow.fromProcessor(() -> flow));
+    }
+
+    public <T> WebSocketConnections<T> call(Processor<Message, Message> flow, T materialized) {
+        return call(Flow.fromProcessorMat(() -> Pair.apply(flow, materialized)));
+    }
+
     public <T> WebSocketConnections<T> call(Flow<Message, Message, T> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
@@ -124,7 +133,7 @@ public class WebSocketClientRequest {
         return new WebSocketConnections<T>(connected, closed);
     }
 
-    public CompletionStage<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, ?> flow) {
+    public Future<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, ?> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
         String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
@@ -136,7 +145,7 @@ public class WebSocketClientRequest {
                         flow,
                         materializer
                 );
-        return pair.first();
+        return Future.from(pair.first());
     }
 
     public static class WebSocketConnections<T> {
