@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 @Component
-public class InternalResultsHelper {
+class InternalResultsHelper {
 
     static WebApplicationContext webApplicationContext;
 

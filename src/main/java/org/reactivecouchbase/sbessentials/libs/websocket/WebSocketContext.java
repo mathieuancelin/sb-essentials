@@ -35,8 +35,4 @@ public class WebSocketContext {
             }
         });
     }
-
-    // public String pathVariable(String name) {
-    //     return Option.of(this.underlying.getAttributes().get("___pathVariables")).map(v -> ((Map<String, String>)v).get(name)).getOrElse(() -> null);
-    // }
 }

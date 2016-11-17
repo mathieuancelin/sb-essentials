@@ -25,12 +25,7 @@ import org.reactivecouchbase.functional.Tuple;
 import org.reactivecouchbase.json.JsObject;
 import org.reactivecouchbase.json.JsValue;
 import org.reactivecouchbase.json.Json;
-import org.reactivecouchbase.sbessentials.config.SBEssentialsConfig;
-import org.reactivecouchbase.sbessentials.config.WebSocketConfig;
-import org.reactivecouchbase.sbessentials.libs.result.InternalResultsHelper;
 import org.reactivecouchbase.sbessentials.libs.websocket.ActorFlow;
-import org.reactivecouchbase.sbessentials.libs.websocket.InternalWebsocketHelper;
-import org.reactivecouchbase.sbessentials.libs.ws.InternalWSHelper;
 import org.reactivecouchbase.sbessentials.libs.ws.WS;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,14 +44,7 @@ import java.util.stream.Collectors;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ContextConfiguration(classes = {
     TestApplication.class,
-    SBEssentialsConfig.class,
-    WebSocketConfig.class,
-    TestController.class,
-    InternalResultsHelper.class,
-    InternalResultsHelper.class,
-    InternalWSHelper.class,
-    InternalWebsocketHelper.class,
-    InternalWebsocketHelper.class,
+    TestController.class
 })
 public class BasicResultsTest {
 

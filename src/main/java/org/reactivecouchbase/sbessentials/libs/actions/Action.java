@@ -22,8 +22,6 @@ public class Action {
 
     Future<Result> run() {
         try {
-            //return Future.async(() -> actionStep.innerInvoke(rc, block), ec).flatMap(e -> e, ec).recoverWith(t ->
-            //Future.successful(ActionsHelperInternal.transformError(t, rc)), ec);
             Future<Result> result = actionStep.innerInvoke(rc, block);
             return result.recoverWith(t -> Future.successful(InternalActionsHelper.transformError(t, rc)), ec);
         } catch (Exception e) {

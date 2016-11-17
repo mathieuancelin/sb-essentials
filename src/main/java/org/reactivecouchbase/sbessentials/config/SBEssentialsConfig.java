@@ -281,15 +281,3 @@ public class SBEssentialsConfig {
         }
     }
 }
-
-// private final AtomicReference<ExecutorService> globalExecutorRef = new AtomicReference<>(null);
-// @Value("${app.config.async.globalec.threadcount}")
-// public String threadCount;
-// @Bean
-// public ExecutorService globalExecutorService() {
-//     if (globalExecutorRef.get() == null) {
-//         ExecutorService executorService = NamedExecutors.newFixedThreadPool(Integer.valueOf(threadCount), "GlobalExecutor");
-//         globalExecutorRef.compareAndSet(null, executorService);
-//     }
-//     return globalExecutorRef.get();
-// }

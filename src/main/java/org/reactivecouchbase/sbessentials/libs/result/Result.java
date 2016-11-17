@@ -84,11 +84,11 @@ public class Result {
         contentType = builder.contentType;
     }
 
-    public static Builder newBuilder() {
+    static Builder newBuilder() {
         return new Builder();
     }
 
-    public static Builder copy(Result copy) {
+    static Builder copy(Result copy) {
         Builder builder = new Builder();
         builder.status = copy.status;
         builder.source = copy.source;
@@ -301,7 +301,7 @@ public class Result {
             + " }";
     }
 
-    public static final class Builder {
+    static final class Builder {
         private int status;
         private Source<ByteString, ?> source;
         private HashMap<String, List<String>> headers;

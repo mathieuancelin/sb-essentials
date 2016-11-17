@@ -2,7 +2,6 @@ package org.reactivecouchbase.sbessentials.libs.websocket;
 
 import akka.stream.javadsl.Flow;
 import org.reactivecouchbase.concurrent.Future;
-import org.springframework.messaging.Message;
 import org.springframework.web.socket.WebSocketMessage;
 
 import java.util.function.Function;

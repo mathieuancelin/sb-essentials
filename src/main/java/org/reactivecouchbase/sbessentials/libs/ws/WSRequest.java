@@ -100,11 +100,11 @@ public class WSRequest {
         materializer = builder.materializer;
     }
 
-    public static Builder newBuilder() {
+    static Builder newBuilder() {
         return new Builder();
     }
 
-    public static Builder newBuilder(WSRequest copy) {
+    static Builder newBuilder(WSRequest copy) {
         Builder builder = new Builder();
         builder.system = copy.system;
         builder.connectionFlow = copy.connectionFlow;
@@ -122,7 +122,7 @@ public class WSRequest {
         return builder;
     }
 
-    public Builder copy() {
+    Builder copy() {
         return newBuilder(this);
     }
 
@@ -211,7 +211,6 @@ public class WSRequest {
             _headers = _headers.put(name, _headers.get(name).get().append(value));
         }
         return copy().withHeaders(_headers).build();
-        // return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, _headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     }
 
     public WSRequest withQueryParams(Map<String, List<String>> queryString) {
@@ -229,12 +228,6 @@ public class WSRequest {
     }
 
     // public WSRequest withRequestTimeout(Option<Duration> requestTimeout) {
-    //     return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
-    // }
-    // public WSRequest withFollowsRedirect(Option<Boolean> followsRedirect) {
-    //     return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
-    // }
-    // public WSRequest withVirtualHost(Option<String> virtualHost) {
     //     return new WSRequest(system, materializer, connectionFlow, host, path, method, body, contentType, headers, queryParams, requestTimeout, followsRedirect, virtualHost);
     // }
 
@@ -257,7 +250,7 @@ public class WSRequest {
     }
 
 
-    public static final class Builder {
+    static final class Builder {
         private ActorSystem system;
         private Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow;
         private String host;

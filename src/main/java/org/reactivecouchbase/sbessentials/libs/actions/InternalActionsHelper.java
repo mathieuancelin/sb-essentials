@@ -15,7 +15,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.concurrent.ExecutorService;
 
 @Component
-public class InternalActionsHelper {
+class InternalActionsHelper {
 
     static WebApplicationContext webApplicationContext;
 
@@ -34,7 +34,6 @@ public class InternalActionsHelper {
         return webApplicationContext.getBean("blocking-actor-materializer", ActorMaterializer.class);
     }
 
-    // TODO : add global filters
     static final ActionStep EMPTY = (request, block) -> {
         try {
             return block.apply(request);

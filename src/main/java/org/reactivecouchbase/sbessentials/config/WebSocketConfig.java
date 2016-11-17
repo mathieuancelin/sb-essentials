@@ -94,11 +94,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         public boolean beforeHandshake(ServerHttpRequest request,
                                        ServerHttpResponse response, WebSocketHandler wsHandler,
                                        Map<String, Object> attributes) throws Exception {
-
-            /* Retrieve original HTTP request */
             HttpServletRequest origRequest = ((ServletServerHttpRequest) request).getServletRequest();
-
-            /* Retrieve template variables */
             Map<String, String> uriTemplateVars = (Map<String, String>) origRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
             attributes.put("___pathVariables", uriTemplateVars == null ? new HashMap<>() : uriTemplateVars);
             return true;

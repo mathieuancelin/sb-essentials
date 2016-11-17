@@ -31,6 +31,9 @@ repositories {
     maven {
         url '../repository/releases/'
     }
+    maven {
+        url '../repository/snapshots/'
+    }
 }
 
 dependencies {

@@ -38,6 +38,7 @@ public class JsonMessageConverter implements HttpMessageConverter<JsValue> {
 
     @Override
     public JsValue read(Class<? extends JsValue> clazz, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
+        // Blocks request here ... maybe this class is not useful at all
         String body = CharStreams.toString(new InputStreamReader(inputMessage.getBody(), Charsets.UTF_8));
         return Json.parse(body);
     }

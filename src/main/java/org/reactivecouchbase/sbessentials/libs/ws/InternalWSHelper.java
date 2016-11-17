@@ -9,7 +9,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.concurrent.ExecutorService;
 
 @Component
-public class InternalWSHelper {
+class InternalWSHelper {
 
     static WebApplicationContext webApplicationContext;
 

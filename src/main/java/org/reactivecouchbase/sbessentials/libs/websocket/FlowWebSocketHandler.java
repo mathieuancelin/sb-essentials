@@ -20,9 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Created by adelegue on 13/11/2016.
- */
 public class FlowWebSocketHandler extends AbstractWebSocketHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowWebSocketHandler.class);
