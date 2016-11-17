@@ -15,6 +15,7 @@ import akka.stream.javadsl.Flow;
 import javaslang.collection.HashMap;
 import javaslang.collection.List;
 import javaslang.collection.Map;
+import org.reactivecouchbase.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,30 +109,30 @@ public class WebSocketClientRequest {
         return copy().withPath(this.path + "/" + path).build();
     }
 
-    public <T> WebSocketConnections<T> call(Flow<Message, Message, CompletionStage<T>> flow) {
+    public <T> WebSocketConnections<T> call(Flow<Message, Message, T> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
         String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
-        final Pair<CompletionStage<WebSocketUpgradeResponse>, CompletionStage<T>> pair =
+        final Pair<CompletionStage<WebSocketUpgradeResponse>, T> pair =
             Http.get(system).singleWebSocketRequest(
                 request,
                 flow,
                 materializer
             );
         final CompletionStage<WebSocketUpgradeResponse> connected = pair.first();
-        final CompletionStage<T> closed = pair.second();
+        final T closed = pair.second();
         return new WebSocketConnections<T>(connected, closed);
     }
 
-    public CompletionStage<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, NotUsed> flow) {
+    public CompletionStage<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, ?> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
         String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
-        final Pair<CompletionStage<WebSocketUpgradeResponse>, NotUsed> pair =
+        final Pair<CompletionStage<WebSocketUpgradeResponse>, ?> pair =
                 Http.get(system).singleWebSocketRequest(
                         request,
                         flow,
@@ -142,20 +143,20 @@ public class WebSocketClientRequest {
 
     public static class WebSocketConnections<T> {
 
-        private final CompletionStage<WebSocketUpgradeResponse> response;
+        private final Future<WebSocketUpgradeResponse> response;
 
-        private final CompletionStage<T> materialized;
+        private final T materialized;
 
-        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> response, CompletionStage<T> materialized) {
-            this.response = response;
+        WebSocketConnections(CompletionStage<WebSocketUpgradeResponse> response, T materialized) {
+            this.response = Future.from(response);
             this.materialized = materialized;
         }
 
-        public CompletionStage<WebSocketUpgradeResponse> response() {
+        public Future<WebSocketUpgradeResponse> response() {
             return response;
         }
 
-        public CompletionStage<T> materialized() {
+        public T materialized() {
             return materialized;
         }
     }
