@@ -68,7 +68,8 @@ public class BasicResultsTest {
 
     @Test
     public void testTextResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/text").call()
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/text").call()
             .flatMap(r -> r.body().map(b ->
                 Tuple.of(
                     b.body(),
@@ -83,13 +84,14 @@ public class BasicResultsTest {
 
     @Test
     public void testPathParamResult() throws Exception {
-        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001").withPath("/tests/hello/Mathieu").call()
-                .flatMap(r -> r.body().map(b ->
-                        Tuple.of(
-                                b.body(),
-                                r.headers()
-                        )
-                ));
+        Future<Tuple<String, Map<String, List<String>>>> fuBody = WS.host("http://localhost:7001")
+            .withPath("/tests/hello/Mathieu").call()
+            .flatMap(r -> r.body().map(b ->
+                Tuple.of(
+                    b.body(),
+                    r.headers()
+                )
+            ));
         Tuple<String, Map<String, List<String>>> body = Await.result(fuBody, MAX_AWAIT);
         Assert.assertEquals("Hello Mathieu!\n", body._1);
         Assert.assertEquals("text/plain", body._2.get("X-Content-Type").flatMap(Traversable::headOption).getOrElse("none"));
