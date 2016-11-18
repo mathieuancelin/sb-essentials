@@ -7,10 +7,14 @@ import org.springframework.web.context.WebApplicationContext;
 @Component
 class InternalResultsHelper {
 
-    static WebApplicationContext webApplicationContext;
+    private static WebApplicationContext webApplicationContext;
 
     @Autowired
     public void setWebApplicationContext(WebApplicationContext webApplicationContext) {
         InternalResultsHelper.webApplicationContext = webApplicationContext;
+    }
+
+    static WebApplicationContext webApplicationContext() {
+        return webApplicationContext;
     }
 }

@@ -1,6 +1,7 @@
 package org.reactivecouchbase.sbessentials.config;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.Http;
 import akka.stream.ActorMaterializer;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -40,6 +41,7 @@ class SBEssentialsConfig {
             config.atPath("systems.ws").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer wsClientActorMaterializer = ActorMaterializer.create(wsSystem);
     private final FakeExecutorService wsExecutor = new FakeExecutorService(wsSystem.dispatcher());
+    private final Http wsHttp = Http.get(wsSystem);
 
     private final ActorSystem blockingSystem = ActorSystem.create("blocking-system",
             config.atPath("systems.blocking").withFallback(ConfigFactory.empty()));
@@ -50,6 +52,7 @@ class SBEssentialsConfig {
             config.atPath("systems.websocket").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer websocketActorMaterializer = ActorMaterializer.create(websocketSystem);
     private final FakeExecutorService websocketExecutor = new FakeExecutorService(websocketSystem.dispatcher());
+    private final Http websocketHttp = Http.get(wsSystem);
 
     {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -151,6 +154,16 @@ class SBEssentialsConfig {
     @Bean(name = "websocket-executor-service")
     public ExecutorService websocketExecutorService() {
         return websocketExecutor;
+    }
+
+    @Bean(name = "ws-http") @Primary
+    public Http wsHttp() {
+        return wsHttp;
+    }
+
+    @Bean(name = "websocket-http")
+    public Http websocketHttp() {
+        return websocketHttp;
     }
 
     @Bean

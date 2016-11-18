@@ -9,6 +9,7 @@ import org.reactivecouchbase.sbessentials.libs.result.Results;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -17,21 +18,39 @@ import java.util.concurrent.ExecutorService;
 @Component
 class InternalActionsHelper {
 
-    static WebApplicationContext webApplicationContext;
-
     static final Logger logger = LoggerFactory.getLogger(InternalActionsHelper.class);
+
+    private static ActorMaterializer actorMaterializer;
+
+    private static ExecutorService executorService;
+
+    private static WebApplicationContext webApplicationContext;
 
     @Autowired
     public void setWebApplicationContext(WebApplicationContext webApplicationContext) {
         InternalActionsHelper.webApplicationContext = webApplicationContext;
     }
 
+    @Autowired @Qualifier("blocking-executor-service")
+    public void setWSExecutorService(ExecutorService executorService) {
+        InternalActionsHelper.executorService = executorService;
+    }
+
+    @Autowired @Qualifier("blocking-actor-materializer")
+    public void setWSActorMaterializer(ActorMaterializer actorMaterializer) {
+        InternalActionsHelper.actorMaterializer = actorMaterializer;
+    }
+
     static ExecutorService executor() {
-        return webApplicationContext.getBean("blocking-executor-service", ExecutorService.class);
+        return executorService;
     }
 
     static ActorMaterializer materializer() {
-        return webApplicationContext.getBean("blocking-actor-materializer", ActorMaterializer.class);
+        return actorMaterializer;
+    }
+
+    static WebApplicationContext webApplicationContext() {
+        return webApplicationContext;
     }
 
     static final ActionStep EMPTY = (request, block) -> {

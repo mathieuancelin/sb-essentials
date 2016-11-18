@@ -46,7 +46,7 @@ public interface ActionStep {
             ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
             HttpServletRequest request = servletRequestAttributes.getRequest();
             HttpServletResponse response = servletRequestAttributes.getResponse();
-            RequestContext rc = new RequestContext(HashMap.empty(), InternalActionsHelper.webApplicationContext, request, response, ec);
+            RequestContext rc = new RequestContext(HashMap.empty(), InternalActionsHelper.webApplicationContext(), request, response, ec);
             return new Action(this, rc, block, ec);
         } else {
             return new Action(this, null, rc ->

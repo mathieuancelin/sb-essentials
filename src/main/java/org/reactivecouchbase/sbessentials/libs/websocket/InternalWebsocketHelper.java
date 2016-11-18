@@ -3,20 +3,22 @@ package org.reactivecouchbase.sbessentials.libs.websocket;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 class InternalWebsocketHelper {
 
-    static ActorSystem actorSystem;
-    static ActorMaterializer actorMaterializer;
+    private static ActorSystem actorSystem;
+    
+    private static ActorMaterializer actorMaterializer;
 
-    @Autowired
+    @Autowired @Qualifier("websocket-actor-materializer")
     public void setActorMaterializer(ActorMaterializer actorMaterializer) {
         InternalWebsocketHelper.actorMaterializer = actorMaterializer;
     }
 
-    @Autowired
+    @Autowired @Qualifier("websocket-actor-system")
     public void setActorSystem(ActorSystem actorSystem) {
         InternalWebsocketHelper.actorSystem = actorSystem;
     }
