@@ -39,6 +39,6 @@ repositories {
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web:1.4.2.RELEASE")
     compile("org.springframework.boot:spring-boot-starter-actuator:1.4.2.RELEASE")
-    compile("org.reactivecouchbase:sb-essentials:0.2.0-SNAPSHOT")
+    compile("org.reactivecouchbase:sb-essentials:0.3.0-SNAPSHOT")
 }
 
