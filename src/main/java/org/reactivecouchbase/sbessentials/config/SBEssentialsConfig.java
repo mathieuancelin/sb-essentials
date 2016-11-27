@@ -10,7 +10,6 @@ import org.reactivecouchbase.concurrent.Promise;
 import org.reactivecouchbase.sbessentials.libs.actions.ActionSupport;
 import org.reactivecouchbase.sbessentials.libs.config.Configuration;
 import org.reactivecouchbase.sbessentials.libs.json.JsonMessageConverter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -33,23 +32,23 @@ class SBEssentialsConfig {
     private final Configuration configuration = Configuration.of(config);
 
     private final ActorSystem system = ActorSystem.create("global-system",
-            config.atPath("systems.global").withFallback(ConfigFactory.empty()));
+            config.atPath("sbessentials.systems.global").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer generalPurposeMaterializer = ActorMaterializer.create(system);
     private final FakeExecutorService globalExecutor = new FakeExecutorService(system.dispatcher());
 
     private final ActorSystem wsSystem = ActorSystem.create("ws-system",
-            config.atPath("systems.ws").withFallback(ConfigFactory.empty()));
+            config.atPath("sbessentials.systems.ws").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer wsClientActorMaterializer = ActorMaterializer.create(wsSystem);
     private final FakeExecutorService wsExecutor = new FakeExecutorService(wsSystem.dispatcher());
     private final Http wsHttp = Http.get(wsSystem);
 
     private final ActorSystem blockingSystem = ActorSystem.create("blocking-system",
-            config.atPath("systems.blocking").withFallback(ConfigFactory.empty()));
+            config.atPath("sbessentials.systems.blocking").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer blockingActorMaterializer = ActorMaterializer.create(blockingSystem);
     private final FakeExecutorService blockingExecutor = new FakeExecutorService(blockingSystem.dispatcher());
 
     private final ActorSystem websocketSystem = ActorSystem.create("websocket-system",
-            config.atPath("systems.websocket").withFallback(ConfigFactory.empty()));
+            config.atPath("sbessentials.systems.websocket").withFallback(ConfigFactory.empty()));
     private final ActorMaterializer websocketActorMaterializer = ActorMaterializer.create(websocketSystem);
     private final FakeExecutorService websocketExecutor = new FakeExecutorService(websocketSystem.dispatcher());
     private final Http websocketHttp = Http.get(wsSystem);
@@ -63,8 +62,7 @@ class SBEssentialsConfig {
         }));
     }
 
-    @Value("${app.config.async.timeout}")
-    public String timeoutDuration;
+    private String timeoutDuration = configuration.getString("sbessentials.async.timeout").getOrElse("5min");
 
     @Bean
     public Config rawConfig() {

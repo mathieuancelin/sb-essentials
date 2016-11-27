@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 class InternalWebsocketHelper {
 
     private static ActorSystem actorSystem;
-    
+
     private static ActorMaterializer actorMaterializer;
 
     @Autowired @Qualifier("websocket-actor-materializer")
