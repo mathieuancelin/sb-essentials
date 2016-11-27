@@ -335,6 +335,6 @@ repositories {
 }
 
 dependencies {
-    compile("org.reactivecouchbase:sb-essentials:0.1.0")
+    compile("org.reactivecouchbase:sb-essentials:0.2.0")
 }
 ```
