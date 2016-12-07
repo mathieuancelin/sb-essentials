@@ -2,6 +2,7 @@ package org.reactivecouchbase.sbessentials.libs.ws;
 
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpResponse;
+import akka.http.scaladsl.coding.Gzip$;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.AsPublisher;
 import akka.stream.javadsl.Sink;
@@ -54,18 +55,31 @@ public class WSResponse {
     }
 
     public Future<WSBody> body(ExecutorService ec) {
-        Source<ByteString, ?> source = underlying.entity().getDataBytes();
+        Source<ByteString, ?> source = bodyAsStream();
         return Future.fromJdkCompletableFuture(
                 source.runFold(ByteString.empty(), ByteString::concat, InternalWSHelper.wsMaterializer()).toCompletableFuture()
         ).map(WSBody::new, ec);
     }
 
-    public Source<ByteString, ?> bodyAsStream() {
+    public Source<ByteString, ?> rawBodyAsStream() {
         return underlying.entity().getDataBytes();
+    }
+
+    public Source<ByteString, ?> bodyAsStream() {
+        Source<ByteString, ?> source = rawBodyAsStream();
+        if (header("Content-Encoding").getOrElse("none").equalsIgnoreCase("gzip")) {
+            return source.via(Gzip$.MODULE$.decoderFlow());
+        }
+        return source;
     }
 
     public Publisher<ByteString> bodyAsPublisher(AsPublisher asPublisher) {
         ActorMaterializer materializer = InternalWSHelper.wsMaterializer();
-        return underlying.entity().getDataBytes().runWith(Sink.asPublisher(asPublisher), materializer);
+        return bodyAsStream().runWith(Sink.asPublisher(asPublisher), materializer);
+    }
+
+    public Publisher<ByteString> rawBodyAsPublisher(AsPublisher asPublisher) {
+        ActorMaterializer materializer = InternalWSHelper.wsMaterializer();
+        return rawBodyAsStream().runWith(Sink.asPublisher(asPublisher), materializer);
     }
 }

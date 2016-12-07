@@ -1,6 +1,8 @@
 package org.reactivecouchbase.sbessentials.libs.ws;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.OutgoingConnection;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
@@ -20,6 +22,10 @@ public class WS {
     }
 
     public static Future<WSResponse> call(String host, HttpRequest request, ExecutorService ec) {
+        return call(ConnectHttp.toHost(host), request, ec);
+    }
+
+    public static <T extends ConnectHttp> Future<WSResponse> call(T host, HttpRequest request, ExecutorService ec) {
         ActorMaterializer materializer = InternalWSHelper.wsMaterializer();
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
                 InternalWSHelper.wsHttp().outgoingConnection(host);
@@ -31,10 +37,14 @@ public class WS {
     }
 
     public static WSRequest host(String host) {
+        return host(ConnectHttp.toHost(host));
+    }
+
+    public static <T extends ConnectHttp> WSRequest host(T host) {
         ActorSystem system = InternalWSHelper.wsActorSystem();
         Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
                 InternalWSHelper.wsHttp().outgoingConnection(host);
-        return new WSRequest(system, connectionFlow, host);
+        return new WSRequest(system, connectionFlow, host.host());
     }
 
     public static WebSocketClientRequest websocketHost(String host) {

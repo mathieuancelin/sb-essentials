@@ -134,6 +134,10 @@ public class WSRequest {
         return copy().withPath(this.path + "/" + path).build();
     }
 
+    public WSRequest addPathSegment(Object path) {
+        return addPathSegment(path.toString());
+    }
+
     public WSRequest withMethod(HttpMethod method) {
         return copy().withMethod(method).build();
     }
@@ -217,12 +221,12 @@ public class WSRequest {
         return copy().withQueryParams(queryString).build();
     }
 
-    public WSRequest withQueryParam(String name, String value) {
+    public WSRequest withQueryParam(String name, Object value) {
         Map<String, List<String>> _queryString = queryParams;
         if (!_queryString.containsKey(name)) {
-            _queryString = _queryString.put(name, List.of(value));
+            _queryString = _queryString.put(name, List.of(value.toString()));
         } else {
-            _queryString = _queryString.put(name, _queryString.get(name).get().append(value));
+            _queryString = _queryString.put(name, _queryString.get(name).get().append(value.toString()));
         }
         return copy().withQueryParams(_queryString).build();
     }
@@ -241,7 +245,7 @@ public class WSRequest {
     public Future<WSResponse> call(ExecutorService ec) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
-        HttpRequest request = HttpRequest.create(path + (queryParams.isEmpty() ? "" : "?" + _queryString))
+        HttpRequest request = HttpRequest.create(path.replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString))
             .withMethod(method)
             .withEntity(HttpEntities.createChunked(contentType, body))
             .addHeaders(_headers);

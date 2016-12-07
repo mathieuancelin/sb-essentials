@@ -1,8 +1,11 @@
 package org.reactivecouchbase.sbessentials.config;
 
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
+import akka.http.javadsl.HttpsConnectionContext;
 import akka.stream.ActorMaterializer;
+import com.google.common.base.Throwables;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.reactivecouchbase.common.Duration;
@@ -20,6 +23,7 @@ import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
+import javax.net.ssl.SSLContext;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +58,13 @@ class SBEssentialsConfig {
     private final Http websocketHttp = Http.get(wsSystem);
 
     {
+        try {
+            SSLContext ctx = SSLContext.getDefault();
+            wsHttp.setDefaultClientHttpsContext(ConnectionContext.https(ctx));
+            websocketHttp.setDefaultClientHttpsContext(ConnectionContext.https(ctx));
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             system.terminate();
             wsSystem.terminate();

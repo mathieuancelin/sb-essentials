@@ -1,9 +1,0 @@
-/.idea
-/.gradle
-*.iml
-/build
-*.class
-*.jar
-.DS_Store
-/target
-/example-1.0.0-SNAPSHOT

@@ -94,18 +94,22 @@ public class WebSocketClientRequest {
         return copy().withQueryParams(val).build();
     }
 
-    public WebSocketClientRequest withQueryParam(String name, String value) {
+    public WebSocketClientRequest withQueryParam(String name, Object value) {
         Map<String, List<String>> _queryString = queryParams;
         if (!_queryString.containsKey(name)) {
-            _queryString = _queryString.put(name, List.of(value));
+            _queryString = _queryString.put(name, List.of(value.toString()));
         } else {
-            _queryString = _queryString.put(name, _queryString.get(name).get().append(value));
+            _queryString = _queryString.put(name, _queryString.get(name).get().append(value.toString()));
         }
         return copy().withQueryParams(_queryString).build();
     }
 
     public WebSocketClientRequest addPathSegment(String path) {
         return copy().withPath(this.path + "/" + path).build();
+    }
+
+    public WebSocketClientRequest addPathSegment(Object path) {
+        return addPathSegment(path.toString());
     }
 
     public Future<WebSocketUpgradeResponse> callNoMat(Processor<Message, Message> flow) {
@@ -119,7 +123,7 @@ public class WebSocketClientRequest {
     public <T> WebSocketConnections<T> call(Flow<Message, Message, T> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
-        String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
+        String url = (host + path).replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
         final Pair<CompletionStage<WebSocketUpgradeResponse>, T> pair =
@@ -136,7 +140,7 @@ public class WebSocketClientRequest {
     public Future<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, ?> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
-        String url = host + path + (queryParams.isEmpty() ? "" : "?" + _queryString);
+        String url = (host + path).replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
         final Pair<CompletionStage<WebSocketUpgradeResponse>, ?> pair =
