@@ -123,7 +123,7 @@ public class WebSocketClientRequest {
     public <T> WebSocketConnections<T> call(Flow<Message, Message, T> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
-        String url = (host + path).replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
+        String url = host + path.replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
         final Pair<CompletionStage<WebSocketUpgradeResponse>, T> pair =
@@ -140,7 +140,7 @@ public class WebSocketClientRequest {
     public Future<WebSocketUpgradeResponse> callNoMat(Flow<Message, Message, ?> flow) {
         String _queryString = queryParams.toList().flatMap(tuple -> tuple._2.map(v -> tuple._1 + "=" + v)).mkString("&");
         List<HttpHeader> _headers = headers.toList().flatMap(tuple -> tuple._2.map(v -> RawHeader.create(tuple._1, v)));
-        String url = (host + path).replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
+        String url = host + path.replace("//", "/") + (queryParams.isEmpty() ? "" : "?" + _queryString);
         WebSocketRequest request = WebSocketRequest.create(url);
         request = _headers.foldLeft(request, WebSocketRequest::addHeader);
         final Pair<CompletionStage<WebSocketUpgradeResponse>, ?> pair =
