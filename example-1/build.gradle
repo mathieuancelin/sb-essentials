@@ -1,0 +1,44 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.4.2.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+
+group = 'org.reactivecouchbase.examples'
+version = '1.0.0-SNAPSHOT'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+jar {
+    baseName 'sb-essentials-example'
+}
+
+mainClassName = 'org.reactivecouchbase.examples.sbessentials.App'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://raw.github.com/ReactiveCouchbase/repository/master/snapshots/'
+    }
+    maven {
+        url '../repository/releases/'
+    }
+    maven {
+        url '../repository/snapshots/'
+    }
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web:1.4.2.RELEASE")
+    compile("org.springframework.boot:spring-boot-starter-actuator:1.4.2.RELEASE")
+    compile("org.reactivecouchbase:sb-essentials:0.3.0-SNAPSHOT")
+}
+
