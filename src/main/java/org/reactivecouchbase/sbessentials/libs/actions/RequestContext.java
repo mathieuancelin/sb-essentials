@@ -1,5 +1,6 @@
 package org.reactivecouchbase.sbessentials.libs.actions;
 
+import akka.http.scaladsl.coding.Gzip$;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.AsPublisher;
 import akka.stream.javadsl.Sink;
@@ -110,12 +111,24 @@ public class RequestContext {
     }
 
     public Source<ByteString, ?> bodyAsStream() {
+        if (header("Content-Encoding").getOrElse("none").equalsIgnoreCase("gzip")) {
+            return rawBodyAsStream().via(Gzip$.MODULE$.decoderFlow());
+        }
+        return rawBodyAsStream();
+    }
+
+    public Source<ByteString, ?> rawBodyAsStream() {
         return StreamConverters.fromInputStream(() -> getRequest().getInputStream());
     }
 
     public Publisher<ByteString> bodyAsPublisher(AsPublisher asPublisher) {
         ActorMaterializer materializer = InternalActionsHelper.materializer();
-        return StreamConverters.fromInputStream(() -> getRequest().getInputStream()).runWith(Sink.asPublisher(asPublisher), materializer);
+        return bodyAsStream().runWith(Sink.asPublisher(asPublisher), materializer);
+    }
+
+    public Publisher<ByteString> rawBodyAsPublisher(AsPublisher asPublisher) {
+        ActorMaterializer materializer = InternalActionsHelper.materializer();
+        return rawBodyAsStream().runWith(Sink.asPublisher(asPublisher), materializer);
     }
 
     public Option<String> header(String name) {
